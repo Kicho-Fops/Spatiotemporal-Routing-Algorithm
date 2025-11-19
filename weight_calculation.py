@@ -475,6 +475,11 @@ def stitchDataset(G, dataset, trip_time_seconds, variable_name, starting_time=17
     """Stitch together time slices from a dataset based on zones in the graph G."""
     import numpy as np
     
+    # Handle empty trip times (e.g. start/end are same node)
+    if not trip_time_seconds:
+        slice_data = np.array(dataset.variables[variable_name][starting_time, :, :])
+        return slice_data
+    
     # Preload time slices
     tdim = dataset.variables[variable_name].shape[0]
     loaded_data = []
