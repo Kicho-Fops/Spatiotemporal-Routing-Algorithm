@@ -47,7 +47,9 @@ def calculate_and_display_route(G, orig_node, dest_node, m, weather_metrics, fas
                         
                 # Add each route to routes_data which will be processed later
                 for i in range(k_routes):
+                    
                     route = k_paths[i]
+                    print("Lenghth of route:", len(route))
                     routes_data.append({
                         'route': route,
                         'weight_type': weight,
@@ -119,31 +121,34 @@ def calculate_and_display_route(G, orig_node, dest_node, m, weather_metrics, fas
             
             # Obtain edge weights for coloring and popup
             for u, v in zip(route[:-1], route[1:]):
-                edge_data = G.get_edge_data(u, v)
-                if isinstance(edge_data, dict):
-                    k0 = list(edge_data.keys())[0]
-                    rain_values.append(edge_data[k0].get('rain_weight', 0))
-                    heat_values.append(edge_data[k0].get('heat_weight', 0))
-                    wind_values.append(edge_data[k0].get('wind_weight', 0))
-                    wind_dir_values.append(edge_data[k0].get('wind_dir_weight', 0))
-                    humidity_values.append(edge_data[k0].get('humidity_weight', 0))
-                    
-                    
-                    if is_fastest:
-                        weight_values.append(edge_data[k0].get('travel_time', 0))
+                try:
+                    edge_data = G.get_edge_data(u, v)
+                    if isinstance(edge_data, dict):
+                        k0 = list(edge_data.keys())[0]
+                        rain_values.append(edge_data[k0].get('rain_weight', 0))
+                        heat_values.append(edge_data[k0].get('heat_weight', 0))
+                        wind_values.append(edge_data[k0].get('wind_weight', 0))
+                        wind_dir_values.append(edge_data[k0].get('wind_dir_weight', 0))
+                        humidity_values.append(edge_data[k0].get('humidity_weight', 0))
+                        
+                        
+                        if is_fastest:
+                            weight_values.append(edge_data[k0].get('travel_time', 0))
+                        else:
+                            weight_values.append(edge_data[k0].get(f'{weight_type}_weight', 0))
                     else:
-                        weight_values.append(edge_data[k0].get(f'{weight_type}_weight', 0))
-                else:
-                    rain_values.append(edge_data.get('rain_weight', 0))
-                    heat_values.append(edge_data.get('heat_weight', 0))
-                    wind_values.append(edge_data.get('wind_weight', 0))
-                    humidity_values.append(edge_data.get('humidity_weight', 0))
-                    wind_dir_values.append(edge_data.get('wind_dir_weight', 0))
-                    
-                    if is_fastest:
-                        weight_values.append(edge_data.get('travel_time', 0))
-                    else:
-                        weight_values.append(edge_data.get(f'{weight_type}_weight', 0))
+                        rain_values.append(edge_data.get('rain_weight', 0))
+                        heat_values.append(edge_data.get('heat_weight', 0))
+                        wind_values.append(edge_data.get('wind_weight', 0))
+                        humidity_values.append(edge_data.get('humidity_weight', 0))
+                        wind_dir_values.append(edge_data.get('wind_dir_weight', 0))
+                        
+                        if is_fastest:
+                            weight_values.append(edge_data.get('travel_time', 0))
+                        else:
+                            weight_values.append(edge_data.get(f'{weight_type}_weight', 0))
+                except Exception as e:
+                    print("Algo no sirvio aqui:", e)
             
             # Normalize weight values for coloring
             if weight_values and max(weight_values) > 0:
@@ -157,94 +162,35 @@ def calculate_and_display_route(G, orig_node, dest_node, m, weather_metrics, fas
             
             # Draw each edge segment
             for i, (u, v) in enumerate(zip(route[:-1], route[1:])):
-                rgba = cmap(w_norm[i])
-                color_hex = mcolors.rgb2hex(rgba[:3])
-                
-                segment_coords = [
-                    (G.nodes[u]['y'], G.nodes[u]['x']),
-                    (G.nodes[v]['y'], G.nodes[v]['x'])
-                ]
-                
-                # Get edge data for popup
-                edge_data = G.get_edge_data(u, v)
-                if isinstance(edge_data, dict):
-                    k0 = list(edge_data.keys())[0]
-                    edge_info = edge_data[k0]
-                else:
-                    edge_info = edge_data
-                
-                # Create popup
-                if is_fastest:
-                    route_label = "Fastest Route"
-                else:
-                    alt_label = f" (Alternative {route_index + 1})" if route_index > 0 else ""
-                    route_label = f"{weight_type.capitalize()}-Optimized Route{alt_label}"
-                
-                popup_html = f"""
-                <div style='min-width: 250px;'>
-                    <h4 style='margin: 0 0 10px 0; color: {color_hex};'>{route_label} - Segment {i+1}</h4>
-                    <table style='width: 100%; border-collapse: collapse;'>
-                        <tr style='background-color: #e3f2fd; border-bottom: 1px solid #ddd;'>
-                            <td colspan='2'><b>Weather Weights</b></td>
-                        </tr>
-                        <tr style='border-bottom: 1px solid #ddd; {"background-color: #fff3cd;" if weight_type == "rain" else ""}'>
-                            <td><b>Rain Weight:</b></td>
-                            <td>{rain_values[i]:.4f}</td>
-                        </tr>
-                        <tr style='border-bottom: 1px solid #ddd; {"background-color: #fff3cd;" if weight_type == "heat" else ""}'>
-                            <td><b>Heat Weight:</b></td>
-                            <td>{heat_values[i]:.4f}</td>
-                        </tr>
-                        <tr style='border-bottom: 1px solid #ddd; {"background-color: #fff3cd;" if weight_type == "wind" else ""}'>
-                            <td><b>Wind Weight:</b></td>
-                            <td>{wind_values[i]:.4f}</td>
-                        </tr>
-                        <tr style='border-bottom: 1px solid #ddd; {"background-color: #fff3cd;" if weight_type == "wind_dir" else ""}'>
-                            <td><b>Wind Direction Weight:</b></td>
-                            <td>{wind_dir_values[i]:.4f}</td>
-                        </tr>
-                        <tr style='border-bottom: 1px solid #ddd; {"background-color: #fff3cd;" if weight_type == "humidity" else ""}'>
-                            <td><b>Humidity Weight:</b></td>
-                            <td>{humidity_values[i]:.4f}</td>
-                        </tr>
-                        <tr style='background-color: #f5f5f5; border-bottom: 1px solid #ddd;'>
-                            <td colspan='2'><b>Edge Properties</b></td>
-                        </tr>
-                        <tr style='border-bottom: 1px solid #ddd;'>
-                            <td><b>Length:</b></td>
-                            <td>{edge_info.get('length', 0):.2f} m</td>
-                        </tr>
-                        <tr style='{"background-color: #fff3cd;" if is_fastest else ""}'>
-                            <td><b>Travel Time:</b></td>
-                            <td>{edge_info.get('travel_time', 0):.2f} s</td>
-                        </tr>
-                    </table>
-                </div>
-                """
-                
-                popup_widget = widgets.HTML(popup_html)
-                popup = Popup(
-                    location=segment_coords[0],
-                    child=popup_widget,
-                    close_button=True,
-                    auto_close=True,
-                    close_on_escape_key=True
-                )
-                
-                # Make fastest route thinner and slightly transparent
-                weight_val = 4 if is_fastest else 7
-                opacity_val = 0.3 if is_fastest else 0.7
-                
-                route_segment = Polyline(
-                    locations=segment_coords,
-                    color=color_hex,
-                    weight=weight_val,
-                    opacity=opacity_val,
-                    fill=False,
-                )
-                route_segment.popup = popup
-                m.add_layer(route_segment)
-                
+                print(len(w_norm), len(route)-1, i)
+                try:
+                    
+                    if i >= len(w_norm):
+                        continue
+                     
+                    rgba = cmap(w_norm[i])
+                    print("RGBA:", rgba)
+                    color_hex = mcolors.rgb2hex(rgba[:3])
+                    print("Color hex:", color_hex)
+                    
+                    segment_coords = [
+                        (G.nodes[u]['y'], G.nodes[u]['x']),
+                        (G.nodes[v]['y'], G.nodes[v]['x'])
+                    ]
+                    
+                   
+                    
+                    route_segment = Polyline(
+                        locations=segment_coords,
+                        color=color_hex,
+                        fill=False,
+                    )
+                    # route_segment.popup = popup
+                    
+                    m.add_layer(route_segment)
+                    print(f"Added segment {i} of route {weight_type} to map.")
+                except Exception as e:
+                    print(f"Error drawing segment {i} of route {weight_type}: {e}")
                 
                 
     except Exception as e:
