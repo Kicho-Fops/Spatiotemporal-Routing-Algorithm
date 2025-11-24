@@ -159,6 +159,7 @@ def calculate_and_display_route(G, orig_node, dest_node, m, weather_metrics, fas
             
             
             cmap = weight_colormaps.get(weight_type, weight_colormaps['rain'])
+            print(cmap)
             
             # Draw each edge segment
             for i, (u, v) in enumerate(zip(route[:-1], route[1:])):
@@ -168,9 +169,11 @@ def calculate_and_display_route(G, orig_node, dest_node, m, weather_metrics, fas
                     if i >= len(w_norm):
                         continue
                      
-                    rgba = cmap(w_norm[i])
-                    print("RGBA:", rgba)
-                    color_hex = mcolors.rgb2hex(rgba[:3])
+                    # rgba = cmap(w_norm[i])
+                    # print("RGBA:", rgba)
+                    # color_hex = mcolors.rgb2hex(rgba[:3])
+                    
+                    color_hex = mcolors.to_hex(cmap(w_norm[i]))
                     print("Color hex:", color_hex)
                     
                     segment_coords = [
@@ -178,10 +181,13 @@ def calculate_and_display_route(G, orig_node, dest_node, m, weather_metrics, fas
                         (G.nodes[v]['y'], G.nodes[v]['x'])
                     ]
                     
-                   
+                    weight_val = 4 if is_fastest else 7
+                    opacity_val = 0.3 if is_fastest else 0.7
                     
                     route_segment = Polyline(
                         locations=segment_coords,
+                        weight=weight_val,
+                        opacity=opacity_val,
                         color=color_hex,
                         fill=False,
                     )
