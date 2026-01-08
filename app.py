@@ -26,7 +26,7 @@ load_dotenv()
 
 _data_loader = None
 
-def get_data_loader(time=17):
+def get_data_loader(time=16):
     """
     Get or create the singleton DataLoader instance.
     """
@@ -42,7 +42,7 @@ if BASE_DATA_DIR is None:
     BASE_DATA_DIR = '{PATH\\TO\\YOUR\\DATA}\\try_clean\\good_candidates\\20250706\\t00z\\outputs\\'
 
 # Construct data carrying object
-data_loader = get_data_loader(time=17)
+data_loader = get_data_loader(time=16)
 
 # Define paths to weather data files
 
