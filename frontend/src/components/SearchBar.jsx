@@ -11,12 +11,14 @@ import {
 } from "@chakra-ui/react";
 import { Search, MapPin } from "lucide-react";
 import { useDebounce } from "use-debounce"; 
+import { setOrigin, setDestination } from "../../redux/slices/coordinates";
+import { useDispatch } from "react-redux";
 
 export const SearchBar = ({ PlaceholderText }) => {
   const [searchValue, setSearchValue] = useState("");
   const [results, setResults] = useState([]);
   const [isListVisible, setIsListVisible] = useState(false);
-
+  const dispatch = useDispatch();
 
   const [debounceSearchValue] = useDebounce(searchValue, 300);
 
@@ -88,7 +90,21 @@ export const SearchBar = ({ PlaceholderText }) => {
               onClick={() => {
                 setSearchValue(result.properties.name);
                 setIsListVisible(false);
-                console.log("Coordenadas seleccionadas:", result.geometry.coordinates);
+                if (PlaceholderText.toLowerCase().includes("origin")) {
+                  dispatch(
+                    setOrigin([
+                      result.geometry.coordinates[1],
+                      result.geometry.coordinates[0],
+                    ])
+                  );
+                } else {
+                  dispatch(
+                    setDestination([
+                      result.geometry.coordinates[1],
+                      result.geometry.coordinates[0],
+                    ])
+                  );
+                }
               }}
             >
               <Text fontWeight="bold" fontSize="sm" color="black">
