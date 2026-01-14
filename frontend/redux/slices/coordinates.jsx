@@ -3,17 +3,17 @@ import { createSlice } from "@reduxjs/toolkit";
 const CoordinatesSlice = createSlice({
   name: "coordinates",
   initialState: {
-    origin: [null, null],
-    destination: [null, null],
+    origin: [0, 0],
+    destination: [0, 0],
   },
   reducers: {
     setOrigin: (state, action) => {
       state.origin = action.payload;
-      console.log("Origin set to:", state.origin);
+      // console.log("Origin set to:", state.origin);
     },
     setDestination: (state, action) => {
       state.destination = action.payload;
-        console.log("Destination set to:", state.destination);
+        // console.log("Destination set to:", state.destination);
     },
   },
 });
