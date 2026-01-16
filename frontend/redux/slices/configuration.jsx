@@ -4,8 +4,8 @@ import { Route } from "lucide-react";
 const ConfigurationSlice = createSlice({
   name: "configuration",
   initialState: {
-    RouteType: "1",
-    weatherSelected: ["rain"],
+    RouteType: 1,
+    weatherSelected: [""],
     rainWeight: 0.5,
     windWeight: 0.5,
     tempWeight: 0.5,
@@ -15,10 +15,11 @@ const ConfigurationSlice = createSlice({
     reducers: {
     setRouteType: (state, action) => {
       state.RouteType = action.payload;
+      // console.log("Updated RouteType:", state.RouteType);
     },
     setWeatherSelected: (state, action) => {
       state.weatherSelected = action.payload;
-      console.log("Updated weatherSelected:", state.weatherSelected);
+      // console.log("Updated weatherSelected:", state.weatherSelected);
     },
     setRainWeight: (state, action) => {
       state.rainWeight = action.payload;

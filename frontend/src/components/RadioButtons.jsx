@@ -1,9 +1,9 @@
 import { RadioGroup, Stack, For } from "@chakra-ui/react";
 
-function RadioButtons({ items }) {
+function RadioButtons({ value, items, onSelect }) {
   
   return (
-    <RadioGroup.Root defaultValue="1">
+    <RadioGroup.Root value={value} onChange={onSelect} defaultValue="1">
       <Stack>
         <For each={items}>
           {(item) => (

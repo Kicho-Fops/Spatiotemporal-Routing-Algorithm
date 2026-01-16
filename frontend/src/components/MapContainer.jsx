@@ -1,4 +1,10 @@
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMapEvents,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "./Map.css";
 import L from "leaflet";
@@ -21,7 +27,6 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 function MapComponent() {
-
   const { origin } = useSelector((state) => state.Coordinates);
   const { destination } = useSelector((state) => state.Coordinates);
   const dispatch = useDispatch();
@@ -30,11 +35,16 @@ function MapComponent() {
     useMapEvents({
       click(e) {
         const { lat, lng } = e.latlng;
-        const originIsDefault = Array.isArray(origin) && origin[0] === 0 && origin[1] === 0;
-        // If origin is unset (default [0,0]) set origin, otherwise set destination
-        if (originIsDefault) {
+
+        const originIsSet = origin[0] !== 0 || origin[1] !== 0;
+        const destinationIsSet = destination[0] !== 0 || destination[1] !== 0;
+
+        if (!originIsSet || (originIsSet && destinationIsSet)) {
+          // First click OR Third click (reset cycle)
           dispatch(setOrigin([lat, lng]));
+          dispatch(setDestination([0, 0])); // Clear destination on restart
         } else {
+          // Second click
           dispatch(setDestination([lat, lng]));
         }
       },
@@ -44,8 +54,6 @@ function MapComponent() {
 
   return (
     <div className="map-wrapper">
-      
-
       <MapContainer
         center={[41.87013663164413, -87.64936415882626]}
         zoom={13}
@@ -62,15 +70,21 @@ function MapComponent() {
 
         {Array.isArray(origin) && origin[0] != null && origin[1] != null && (
           <Marker position={[origin[0], origin[1]]}>
-            <Popup>Origin: {origin[0]}, {origin[1]}</Popup>
+            <Popup>
+              Origin: {origin[0]}, {origin[1]}
+            </Popup>
           </Marker>
         )}
 
-        {Array.isArray(destination) && destination[0] != null && destination[1] != null && (
-          <Marker position={[destination[0], destination[1]]}>
-            <Popup>Destination: {destination[0]}, {destination[1]}</Popup>
-          </Marker>
-        )}
+        {Array.isArray(destination) &&
+          destination[0] != null &&
+          destination[1] != null && (
+            <Marker position={[destination[0], destination[1]]}>
+              <Popup>
+                Destination: {destination[0]}, {destination[1]}
+              </Popup>
+            </Marker>
+          )}
       </MapContainer>
     </div>
   );

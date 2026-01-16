@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Slider, Stack } from "@chakra-ui/react";
 
-function SliderCustom({element}) {
+function SliderCustom({element, startingValue}) {
   // En v3, el valor suele ser un array [number]
-  const [value, setValue] = useState([50]);
+  const [value, setValue] = useState([startingValue]);
 
   return (
     <Stack>
