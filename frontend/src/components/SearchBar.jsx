@@ -1,30 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Button, 
-  Input, 
-  Group, 
-  InputElement, 
-  Box, 
-  List, 
+import {
+  Button,
+  Input,
+  Group,
+  InputElement,
+  Box,
+  List,
   Text,
-  VStack 
+  VStack,
 } from "@chakra-ui/react";
 import { Search, MapPin } from "lucide-react";
-import { useDebounce } from "use-debounce"; 
+import { useDebounce } from "use-debounce";
 import { setOrigin, setDestination } from "../../redux/slices/coordinates";
 import { useDispatch, useSelector } from "react-redux";
-
 
 export const SearchBar = ({ PlaceholderText }) => {
   const { origin } = useSelector((state) => state.Coordinates);
   const { destination } = useSelector((state) => state.Coordinates);
-  const [searchValue, setSearchValue] = useState(PlaceholderText.toLowerCase().includes("origin") ? origin[0] !== 0 || origin[1] !== 0 ? `${origin[0]}, ${origin[1]}` : "" : destination[0] !== 0 || destination[1] !== 0 ? `${destination[0]}, ${destination[1]}` : "");
+  const [searchValue, setSearchValue] = useState(
+    PlaceholderText.toLowerCase().includes("origin")
+      ? origin[0] !== 0 || origin[1] !== 0
+        ? `${origin[0]}, ${origin[1]}`
+        : ""
+      : destination[0] !== 0 || destination[1] !== 0
+      ? `${destination[0]}, ${destination[1]}`
+      : ""
+  );
   const [results, setResults] = useState([]);
   const [isListVisible, setIsListVisible] = useState(false);
   const dispatch = useDispatch();
 
   const [debounceSearchValue] = useDebounce(searchValue, 300);
-
 
   useEffect(() => {
     const fetchData = async () => {

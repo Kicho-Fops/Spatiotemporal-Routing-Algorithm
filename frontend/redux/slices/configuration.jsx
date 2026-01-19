@@ -1,4 +1,4 @@
-import { createSlice } from "@reduxjs/toolkit"; 
+import { createSlice } from "@reduxjs/toolkit";
 import { Route } from "lucide-react";
 
 const ConfigurationSlice = createSlice({
@@ -6,23 +6,34 @@ const ConfigurationSlice = createSlice({
   initialState: {
     RouteType: 1,
     weatherSelected: [""],
-    rainWeight: 0.5,
-    windWeight: 0.5,
-    tempWeight: 0.5,
-    humWeight: 0.5,
-
-    },
-    reducers: {
+    numberOfPaths: 1,
+    rainWeight: 0.85834,
+    windWeight: 0.0285,
+    tempWeight: 0.09648,
+    humWeight: 0.01668,
+  },
+  reducers: {
     setRouteType: (state, action) => {
       state.RouteType = action.payload;
       // console.log("Updated RouteType:", state.RouteType);
     },
     setWeatherSelected: (state, action) => {
-      state.weatherSelected = action.payload;
+      const masterOrder = ["rain", "heat", "humidity", "wind"];
+
+      state.weatherSelected = masterOrder.filter((item) =>
+        action.payload.includes(item),
+      );
+
+      // if (selectedWeather?.includes("rain")) activeWeights.push(rainWeight);
+      //     if (selectedWeather?.includes("heat")) activeWeights.push(tempWeight);
+      //     if (selectedWeather?.includes("humidity")) activeWeights.push(humWeight);
+      //     if (selectedWeather?.includes("wind")) activeWeights.push(windWeight);
+
       // console.log("Updated weatherSelected:", state.weatherSelected);
     },
     setRainWeight: (state, action) => {
       state.rainWeight = action.payload;
+      // console.log("Updated rainWeight:", state.rainWeight);
     },
     setWindWeight: (state, action) => {
       state.windWeight = action.payload;
@@ -33,9 +44,29 @@ const ConfigurationSlice = createSlice({
     setHumWeight: (state, action) => {
       state.humWeight = action.payload;
     },
+    setNumberOfPaths: (state, action) => {
+      state.numberOfPaths = action.payload;
+      console.log("Updated numberOfPaths:", state.numberOfPaths);
+    },
   },
 });
 
-const { setRouteType, setWeatherSelected, setRainWeight, setWindWeight, setTempWeight, setHumWeight } = ConfigurationSlice.actions;
-export { setRouteType, setWeatherSelected, setRainWeight, setWindWeight, setTempWeight, setHumWeight };
+const {
+  setRouteType,
+  setWeatherSelected,
+  setRainWeight,
+  setWindWeight,
+  setTempWeight,
+  setHumWeight,
+  setNumberOfPaths,
+} = ConfigurationSlice.actions;
+export {
+  setRouteType,
+  setWeatherSelected,
+  setRainWeight,
+  setWindWeight,
+  setTempWeight,
+  setHumWeight,
+  setNumberOfPaths,
+};
 export default ConfigurationSlice.reducer;

@@ -17,7 +17,7 @@ Controller layer
 
 app = Flask(__name__)
 
-
+CORS(app)
 
 @app.route("/")
 def hello_world():
@@ -25,9 +25,10 @@ def hello_world():
 
 
 
-@app.route('/route', methods=["GET"])
+@app.route('/route', methods=["POST"])
 def calculate_weather_aware_route():
     data = request.get_json()
+    print("Received data for route calculation:", data)
     datafile = data["city"]
     origin = data["origin"]
     destination = data["destination"]

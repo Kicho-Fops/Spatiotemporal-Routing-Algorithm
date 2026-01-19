@@ -1,21 +1,25 @@
 import React, { useState } from "react";
 import { Slider, Stack } from "@chakra-ui/react";
 
-function SliderCustom({element, startingValue}) {
+function SliderCustom({element, startingValue, onChange }) {
   // En v3, el valor suele ser un array [number]
-  const [value, setValue] = useState([startingValue]);
+   const sliderValue = [startingValue];
 
   return (
     <Stack>
       <Slider.Root 
-        value={value} 
-        onValueChange={(details) => setValue(details.value)}
+        value={sliderValue} 
+        
+        onValueChange={(details) => {
+          onChange(details.value[0]); 
+        }}
+       
         min={0}
         max={1}
         step={0.01}
         p={3}
       >
-        <Slider.Label mb="2">{element}: {value}</Slider.Label>
+        <Slider.Label mb="2">{element}: {sliderValue[0]}</Slider.Label>
         
         <Slider.Control>
           <Slider.Track>
