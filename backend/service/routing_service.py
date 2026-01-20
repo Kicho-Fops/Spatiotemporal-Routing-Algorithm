@@ -287,12 +287,6 @@ def calculate_route(datafile,
     
     index = 0
     for route in routes_data:
-        print('distance:', route['distance'], " KM")
-        print('duration:', route['duration'], " minutes")
-        print('rain_exposure:', route['rain_exposure'])
-        print('heat_exposure:', route['heat_exposure'])
-        print('wind_exposure:', route['wind_exposure'])
-        print('humidity_exposure:', route['humidity_exposure'])
         route_data_coords = []
         for node_id in route['route']:
             node = GraphLoader.G.nodes[node_id]
