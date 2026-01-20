@@ -28,7 +28,6 @@ def hello_world():
 @app.route('/route', methods=["POST"])
 def calculate_weather_aware_route():
     data = request.get_json()
-    print("Received data for route calculation:", data)
     datafile = data["city"]
     origin = data["origin"]
     destination = data["destination"]

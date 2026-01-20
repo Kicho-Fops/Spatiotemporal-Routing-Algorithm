@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { Route } from "lucide-react";
+
 
 const ConfigurationSlice = createSlice({
   name: "configuration",

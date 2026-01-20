@@ -124,20 +124,20 @@ def calculate_route(datafile,
         wind_weight = 0.01657
     # In maps mode we are able to create a (for example) rain + heat aware path, so we need to check that the sum of weights is less than 1.0
     elif map_view_mode == "Custom weights":
-        rain_weight = route_weights[0] if "rain" in route_conditions else 0
-        heat_weight = route_weights[1] if "heat" in route_conditions else 0
-        wind_weight = route_weights[2] if "wind" in route_conditions else 0
-        humidity_weight = route_weights[3] if "humidity" in route_conditions else 0
+        rain_weight = route_weights[route_conditions.index("rain")] if "rain" in route_conditions else 0
+        heat_weight = route_weights[route_conditions.index("heat")] if "heat" in route_conditions else 0
+        wind_weight = route_weights[route_conditions.index("wind")] if "wind" in route_conditions else 0
+        humidity_weight = route_weights[route_conditions.index("humidity")] if "humidity" in route_conditions else 0
         
         if rain_weight + heat_weight + wind_weight + humidity_weight > 1.0:
             raise ValueError("In 'Maps' mode, the sum of weather weights must be 1.0")
     # In variable mode we just assign the weights as per user input as long as they are between 0 and 1
     else:
-        rain_weight = route_weights[0] if "rain" in route_conditions else 0
-        heat_weight = route_weights[1] if "heat" in route_conditions else 0
-        wind_weight = route_weights[2] if "wind" in route_conditions else 0
-        humidity_weight = route_weights[3] if "humidity" in route_conditions else 0
-    
+        rain_weight = route_weights[route_conditions.index("rain")] if "rain" in route_conditions else 0
+        heat_weight = route_weights[route_conditions.index("heat")] if "heat" in route_conditions else 0
+        wind_weight = route_weights[route_conditions.index("wind")] if "wind" in route_conditions else 0
+        humidity_weight = route_weights[route_conditions.index("humidity")] if "humidity" in route_conditions else 0
+        
         if (rain_weight < 0 or rain_weight > 1 or
             heat_weight < 0 or heat_weight > 1 or
             wind_weight < 0 or wind_weight > 1 or
@@ -284,18 +284,34 @@ def calculate_route(datafile,
         
     # instead we will create linestrings and store to geojson. Then fetch it on frontend whenever needed.
     route_coords = []
+    
     index = 0
     for route in routes_data:
+        print('distance:', route['distance'], " KM")
+        print('duration:', route['duration'], " minutes")
+        print('rain_exposure:', route['rain_exposure'])
+        print('heat_exposure:', route['heat_exposure'])
+        print('wind_exposure:', route['wind_exposure'])
+        print('humidity_exposure:', route['humidity_exposure'])
         route_data_coords = []
         for node_id in route['route']:
             node = GraphLoader.G.nodes[node_id]
             route_data_coords.append((node['y'], node['x']))
+            
         route_coords.append({
             'route_index': index,
             'weight_type': route['weight_type'],
-            'coordinates': route_data_coords
+            'coordinates': route_data_coords,
+            'distance': float(round(route['distance'], 2)),
+            'duration': float(round(route['duration'], 2)),
+            'rain_exposure': float(round(route['rain_exposure'], 2)),
+            'heat_exposure': float(round(route['heat_exposure'], 2)),
+            'wind_exposure': float(round(route['wind_exposure'], 2)),
+            'humidity_exposure': float(round(route['humidity_exposure'], 2)),
         })
+        
         index += 1
+        
 
     return route_coords
     
