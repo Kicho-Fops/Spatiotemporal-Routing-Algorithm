@@ -35,6 +35,7 @@ class DataLoader:
             
             self.graph_path = f"data/{graph_path}.graphml"
             graph = ox.load_graphml(self.graph_path)
+            self.G = graph
             self.G = nx.MultiDiGraph(graph)
             self.G = ox.routing.add_edge_speeds(self.G)
             self.G = ox.routing.add_edge_travel_times(self.G)    
