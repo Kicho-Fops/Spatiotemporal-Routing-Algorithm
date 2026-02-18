@@ -1,6 +1,6 @@
 from flask import Flask
 import json
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import networkx as nx
 from networkx.readwrite import json_graph
@@ -37,6 +37,7 @@ def calculate_weather_aware_route():
     route_weights = data["weights"]
     time = data["time"]
     Graph_name = data["Graph_name"]
+    output_format = data["output_format"] if "output_format" in data else "json"
     
     
     # TODO: Handle that the data is valid
@@ -73,10 +74,20 @@ def calculate_weather_aware_route():
                             route_conditions,
                             route_weights,
                             time,
-                            Graph_name)
+                            Graph_name,
+                            output_format=output_format)
 
+    if output_format == "json":
+        return jsonify({"route_coords": route_coords}), 200
+    elif output_format == "geojson":
+        response = make_response(jsonify(route_coords), 200)
 
-    return jsonify({"route_coords": route_coords}), 200
+        # 3. Set the correct MIME type for GeoJSON
+        response.headers["Content-Type"] = "application/geo+json"
+
+        return response
+
+    
 
 
 @app.route('/graph/<graph_name>', methods=["GET"])
