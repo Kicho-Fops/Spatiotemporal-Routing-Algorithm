@@ -33,7 +33,9 @@ def calculate_route(datafile,
                     route_conditions,
                     route_weights,
                     time,
-                    Graph_name):
+                    Graph_name,
+                    output_format='json' # Currently supports 'json' and 'geojson'
+                    ):
     
     """
     PREREQUISITE:
@@ -281,33 +283,78 @@ def calculate_route(datafile,
             "wind_exposure": nx.path_weight(GraphLoader.G, route_fastest, weight='wind_weight') if 'wind' in route_weights else 0,
             "humidity_exposure": nx.path_weight(GraphLoader.G, route_fastest, weight='humidity_weight') if 'humidity' in route_weights else 0,
         })
-        
-    # instead we will create linestrings and store to geojson. Then fetch it on frontend whenever needed.
+      
     route_coords = []
+      
+    # To export in JSON format
     
-    index = 0
-    for route in routes_data:
-        route_data_coords = []
-        for node_id in route['route']:
-            node = GraphLoader.G.nodes[node_id]
-            route_data_coords.append((node['y'], node['x']))
-            
-        route_coords.append({
-            'route_index': index,
-            'weight_type': route['weight_type'],
-            'coordinates': route_data_coords,
-            'distance': float(round(route['distance'], 2)),
-            'duration': float(round(route['duration'], 2)),
-            'rain_exposure': float(round(route['rain_exposure'], 2)),
-            'heat_exposure': float(round(route['heat_exposure'], 2)),
-            'wind_exposure': float(round(route['wind_exposure'], 2)),
-            'humidity_exposure': float(round(route['humidity_exposure'], 2)),
-        })
+    if output_format == 'json':
         
-        index += 1
+        index = 0
+        for route in routes_data:
+            route_data_coords = []
+            for node_id in route['route']:
+                node = GraphLoader.G.nodes[node_id]
+                route_data_coords.append((node['y'], node['x']))
+                
+            route_coords.append({
+                'route_index': index,
+                'weight_type': route['weight_type'],
+                'coordinates': route_data_coords,
+                'distance': float(round(route['distance'], 2)),
+                'duration': float(round(route['duration'], 2)),
+                'rain_exposure': float(round(route['rain_exposure'], 2)),
+                'heat_exposure': float(round(route['heat_exposure'], 2)),
+                'wind_exposure': float(round(route['wind_exposure'], 2)),
+                'humidity_exposure': float(round(route['humidity_exposure'], 2)),
+            })
+            
+            index += 1
+        
+        return route_coords
+    
+    elif output_format == 'geojson':
+        
+        for i, route in enumerate(routes_data):
+            route_line_coords = []
         
 
-    return route_coords
+            for node_id in route['route']:
+                node = GraphLoader.G.nodes[node_id]
+
+                route_line_coords.append([node['x'], node['y']]) 
+                
+            properties = {
+                'route_index': i, 
+                'weight_type': route.get('weight_type', 'unknown'),
+                'distance': float(round(route['distance'], 2)),
+                'duration': float(round(route['duration'], 2)),
+                'rain_exposure': float(round(route.get('rain_exposure', 0), 2)),
+                'heat_exposure': float(round(route.get('heat_exposure', 0), 2)),
+                'wind_exposure': float(round(route.get('wind_exposure', 0), 2)),
+                'humidity_exposure': float(round(route.get('humidity_exposure', 0), 2)),
+            }
+            
+            feature = ({
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": route_line_coords
+                },
+                "properties": properties
+            })
+            
+            route_coords.append(feature)
+        
+        return {
+        "type": "FeatureCollection",
+        "features": route_coords
+        }
+    else:
+        raise ValueError("Unsupported output format. Please choose 'json' or 'geojson'.")
+    
+    return "You should not reach this point. Check the output_format value and ensure it's either 'json' or 'geojson' or any other supported format."
+    
     
     
 def get_graph(Graph_name, datafile, time) -> nx.MultiDiGraph:
