@@ -314,41 +314,63 @@ def calculate_route(datafile,
         return route_coords
     
     elif output_format == 'geojson':
-        
-        for i, route in enumerate(routes_data):
-            route_line_coords = []
-        
-
-            for node_id in route['route']:
-                node = GraphLoader.G.nodes[node_id]
-
-                route_line_coords.append([node['x'], node['y']]) 
+        for route_obj in routes_data:
+            path_nodes = route_obj['route']
+            
+            for i in range(len(path_nodes) - 1):
+                u_id = path_nodes[i]
+                v_id = path_nodes[i + 1]
                 
-            properties = {
-                'route_index': i, 
-                'weight_type': route.get('weight_type', 'unknown'),
-                'distance': float(round(route['distance'], 2)),
-                'duration': float(round(route['duration'], 2)),
-                'rain_exposure': float(round(route.get('rain_exposure', 0), 2)),
-                'heat_exposure': float(round(route.get('heat_exposure', 0), 2)),
-                'wind_exposure': float(round(route.get('wind_exposure', 0), 2)),
-                'humidity_exposure': float(round(route.get('humidity_exposure', 0), 2)),
-            }
+                # 1. Get edge data
+                edge_data_dict = GraphLoader.G.get_edge_data(u_id, v_id)
+                if not edge_data_dict:
+                    continue
+
+                edge_data = edge_data_dict.get(0, {})
+
+
+                if 'geometry' in edge_data:
+
+                    geo = edge_data['geometry']
+
+                    segment_coords = [[float(c[0]), float(c[1])] for c in geo.coords]
+                else:
+                    u_attr = GraphLoader.G.nodes[u_id]
+                    v_attr = GraphLoader.G.nodes[v_id]
+                    segment_coords = [
+                        [float(u_attr['x']), float(u_attr['y'])], 
+                        [float(v_attr['x']), float(v_attr['y'])]
+                    ]
+
+                properties = {
+                    'route_index': route_obj.get('route_index'), 
+                    'segment_index': i,
+                    'weight_type': route_obj.get('weight_type', 'unknown'),
+                    'street_name': str(edge_data.get('name', 'Unnamed Road')),
+                    'highway': str(edge_data.get('highway', 'unknown')),
+                    'distance': float(round(edge_data.get('length', 0), 2)),
+                    'duration': float(round(edge_data.get('travel_time', 0), 2)),
+                    'rain_exposure': float(round(float(edge_data.get('rain_weight', 0)), 4)),
+                    'heat_exposure': float(round(float(edge_data.get('heat_weight', 0)), 4)),
+                    'wind_exposure': float(round(float(edge_data.get('wind_weight', 0)), 4)),
+                    'humidity_exposure': float(round(float(edge_data.get('humidity_weight', 0)), 4)),
+                    'total_weight': float(round(float(edge_data.get('total_weight', 0)), 4))
+                }
+
+                feature = {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": segment_coords
+                    },
+                    "properties": properties
+                }
             
-            feature = ({
-                "type": "Feature",
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": route_line_coords
-                },
-                "properties": properties
-            })
-            
-            route_coords.append(feature)
-        
+                route_coords.append(feature)
+
         return {
-        "type": "FeatureCollection",
-        "features": route_coords
+            "type": "FeatureCollection",
+            "features": route_coords
         }
     else:
         raise ValueError("Unsupported output format. Please choose 'json' or 'geojson'.")
