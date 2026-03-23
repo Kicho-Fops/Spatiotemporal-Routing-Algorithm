@@ -314,23 +314,49 @@ def calculate_route(datafile,
         return route_coords
     
     elif output_format == 'geojson':
+        edge_features = {}
+        
         for route_obj in routes_data:
+            current_weight_type = route_obj.get('weight_type', 'unknown')
             path_nodes = route_obj['route']
             
             for i in range(len(path_nodes) - 1):
                 u_id = path_nodes[i]
                 v_id = path_nodes[i + 1]
                 
-                # 1. Get edge data
+                
+                
+                edge_key = (u_id, v_id)
+                
+                if edge_key in edge_features:
+                    props = edge_features[edge_key]['properties']
+                    
+                    
+                    props['repeated'] += 1
+                    
+                    if isinstance(props['weight_type'], str):
+                        props['weight_type'] = [props['weight_type']]
+                        
+                   
+                    if current_weight_type not in props['weight_type']:
+                        props['weight_type'].append(current_weight_type)
+                        
+                    continue
+                
+                        # 1. Get edge data
                 edge_data_dict = GraphLoader.G.get_edge_data(u_id, v_id)
                 if not edge_data_dict:
                     continue
 
+
                 edge_data = edge_data_dict.get(0, {})
 
+                
 
                 if 'geometry' in edge_data:
 
+
+                    
                     geo = edge_data['geometry']
 
                     segment_coords = [[float(c[0]), float(c[1])] for c in geo.coords]
@@ -342,7 +368,10 @@ def calculate_route(datafile,
                         [float(v_attr['x']), float(v_attr['y'])]
                     ]
 
+                # Check if this edge is duplicated inside the segment_coords array, if so, skip it
+                
                 properties = {
+                    'repeated': 1,
                     'route_index': route_obj.get('route_index'), 
                     'segment_index': i,
                     'weight_type': route_obj.get('weight_type', 'unknown'),
@@ -367,6 +396,7 @@ def calculate_route(datafile,
                 }
             
                 route_coords.append(feature)
+                edge_features[edge_key] = feature
 
         return {
             "type": "FeatureCollection",
