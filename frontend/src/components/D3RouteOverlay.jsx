@@ -2,17 +2,18 @@ import React, { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import * as d3 from "d3";
 import L from "leaflet";
-// Assuming you copied these files into your project
+import { useSelector } from "react-redux";
+
+// Streetweave
 import {
   buildD3Instructions,
   drawSegments,
 } from "../utils/streetweave_renderer/d3Helpers";
 import { getOffsetDistance } from "../utils/streetweave_renderer/mapHelpers";
 
-import { useSelector } from "react-redux";
-
-export default function D3RouteOverlay({ routesArray }) {
+export default function D3RouteOverlay() {
   const map = useMap();
+  
   const svgRef = useRef(null);
 
   const specifications = useSelector(
@@ -21,9 +22,7 @@ export default function D3RouteOverlay({ routesArray }) {
 
   const unitSpec = specifications?.length > 0 ? specifications[0].unit : null;
 
-
-  console.log("D3RouteOverlay received routesArray:", routesArray);
-  console.log("D3RouteOverlay received unitSpec:", unitSpec);
+  const routesArray = useSelector((state) => state.Route.routes);
 
   useEffect(() => {
     if (!map || !routesArray || !unitSpec) return;
@@ -33,9 +32,12 @@ export default function D3RouteOverlay({ routesArray }) {
       map.createPane("d3-routes-pane");
       map.getPane("d3-routes-pane").style.zIndex = 450;
     }
+    
     d3.select(map.getPanes()["d3-routes-pane"]).selectAll("svg").remove();
+    
     const svgLayer = L.svg({ pane: "d3-routes-pane" }).addTo(map);
     svgRef.current = svgLayer;
+
     const svgGroup = d3
       .select(map.getPanes()["d3-routes-pane"])
       .select("svg")
@@ -44,68 +46,66 @@ export default function D3RouteOverlay({ routesArray }) {
       .join("g")
       .attr("class", "leaflet-zoom-hide");
 
-    // 2. Parse Your Data to Match Streetweave's PhysicalEdge[] Format
+    // 2. Parse Your Data
     let formattedEdges = [];
-    
-    // We will build a dynamic dictionary of stats for all properties
-    let attributeStats = {}; 
+    let attributeStats = {};
 
-    routesArray.forEach((route) => {
-      const coords = route.coordinates;
-      
+    const features = routesArray.type === "FeatureCollection" 
+      ? routesArray.features 
+      : routesArray;
+
+    features.forEach((feature) => {
+      const coords = feature.geometry.coordinates;
       const edgeAttributes = {
-        heat_exposure: route.heat_exposure,
-        distance: route.distance,
-        duration: route.duration,
+        heat_exposure: feature.properties.heat_exposure,
+        humidity_exposure: feature.properties.humidity_exposure,
+        rain_exposure: feature.properties.rain_exposure,
+        wind_exposure: feature.properties.wind_exposure,
+        distance: feature.properties.distance,
+        duration: feature.properties.duration,
+        repeated: feature.properties.repeated || 1
       };
 
-      // Dynamically track min/max for EVERY numeric property
+      // Track min/max stats
       Object.keys(edgeAttributes).forEach((key) => {
-        if (typeof edgeAttributes[key] === 'number') {
+        if (typeof edgeAttributes[key] === "number") {
           if (!attributeStats[key]) {
             attributeStats[key] = { min: Infinity, max: -Infinity };
           }
-          if (edgeAttributes[key] < attributeStats[key].min) {
-            attributeStats[key].min = edgeAttributes[key];
-          }
-          if (edgeAttributes[key] > attributeStats[key].max) {
-            attributeStats[key].max = edgeAttributes[key];
-          }
+          attributeStats[key].min = Math.min(attributeStats[key].min, edgeAttributes[key]);
+          attributeStats[key].max = Math.max(attributeStats[key].max, edgeAttributes[key]);
         }
       });
 
-      // Loop over coordinates to create segment-by-segment edges
+      // Create segment edges
       for (let i = 0; i < coords.length - 1; i++) {
         formattedEdges.push({
-          point0: { lat: coords[i][0], lon: coords[i][1] },
-          point1: { lat: coords[i + 1][0], lon: coords[i + 1][1] },
-          bearing: 0, 
+          point0: { lat: coords[i][1], lon: coords[i][0] },
+          point1: { lat: coords[i + 1][1], lon: coords[i + 1][0] },
+          bearing: 0,
           attributes: edgeAttributes,
         });
       }
     });
 
-    // Provide the required structure for getDynamicStyleValue
     const fakeProcessedEdges = {
       edges: formattedEdges,
-      attributeStats: attributeStats // Passes the dynmically generated stats
+      attributeStats: attributeStats,
     };
 
     // 3. Define the Redraw Function
     const redraw = () => {
       svgGroup.selectAll("*").remove();
 
-      // Ensure your copied getOffsetDistance handles alignment (left vs right)
-      const dynamicDistance = getOffsetDistance(map) * 0; // offset count if aligning multiple lines
+      const dynamicDistance = getOffsetDistance(map) * 0;
 
-      // buildD3Instructions uses styleHelpers internally to apply unitSpec to your edges!
       const instructions = buildD3Instructions(
         formattedEdges,
         unitSpec,
         fakeProcessedEdges,
         { attributeStats: fakeProcessedEdges.attributeStats },
         dynamicDistance,
-        "none", // relationType
+        "none",
         map,
       );
 

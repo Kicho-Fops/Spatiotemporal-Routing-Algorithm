@@ -27,7 +27,9 @@ import { setRoute } from "../../redux/slices/routeCoordinates";
 import NumberInputWrapper from "../components/NumberInputWrapper";
 import TextEditor from "../components/TextEditor.jsx";
 
+
 import { setSpecification } from "../../redux/slices/specification";
+
 
 import { parseSpecification } from 'streetweave';
 // import { ParsedSpec } from 'streetweave'; 
@@ -125,10 +127,12 @@ function MapPage() {
         weights: activeWeights,
         time: 17,
         Graph_name: "chicago",
+        output_format: "geojson"
       }),
     })
       .then((res) => res.json())
-      .then((data) => dispatch(setRoute(data)))
+      .then((data) => {console.log("Received route data:", data);
+        dispatch(setRoute(data))})
       .catch((err) => console.error("Error:", err));
   }
 
@@ -229,16 +233,12 @@ function MapPage() {
             </Text>
 
             <SearchBar
-              PlaceholderText={
-                origin[0] !== 0 ? `${origin[0]}, ${origin[1]}` : "Origin..."
-              }
+              type="origin"
+              placeholder="Origin..."
             />
             <SearchBar
-              PlaceholderText={
-                destination[0] !== 0
-                  ? `${destination[0]}, ${destination[1]}`
-                  : "Destination..."
-              }
+              type="destination"
+              placeholder="Destination..."
             />
 
             <Separator />

@@ -75,7 +75,23 @@ export function buildD3Instructions(
     
     let dByColor: Record<string,string> = {};
     
-    const baseWidth = getDynamicStyleValue(unit.width, edge.attributes, processedEdges.attributeStats, [0, 10]) as number;
+      // Ensure we range from [3 (min_width), 10 (max_width)]
+    let calculatedWidth = getDynamicStyleValue(
+      unit.width, 
+      edge.attributes, 
+      processedEdges.attributeStats, 
+      [5, 5]
+    ) as number;
+    
+    // Fallback if width isn't dynamically driven by your spec
+    if (calculatedWidth === undefined) calculatedWidth = 3;
+
+    // Apply the repeated attribute as a slight modifier (e.g., +20% width per overlap)
+    const repeatedMultiplier = edge.attributes?.repeated 
+      ? 1 + ((edge.attributes.repeated - 1) * 0.2) 
+      : 1;
+
+    const baseWidth = calculatedWidth * repeatedMultiplier;
 
     if (unit.method === 'line' && unit.orientation === 'parallel') {
     if (unit.squiggle) {
@@ -83,13 +99,13 @@ export function buildD3Instructions(
         d = generateSimpleWavyPath(p0, p1, squiggleAmplitude, squiggleFrequency);
         stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, ["#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026"]) as string;
         strokeWidth = getAdjustedLineWidth(map, baseWidth)
-        strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0, 1]) as number;
+        strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.2, 1]) as number;
 
     } else {
         d = `M${p0.x},${p0.y}L${p1.x},${p1.y}`;
         stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, ["#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026"]) as string;
         strokeWidth = getAdjustedLineWidth(map, baseWidth)
-        strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0, 1]) as number;
+        strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.2, 1]) as number;
         strokeDasharray =  getDashArray(unit.dash, edge.attributes, processedEdges.attributeStats)
     }
 
@@ -149,7 +165,7 @@ export function buildD3Instructions(
     // d = `M${startpoint_screen[0]},${startpoint_screen[1]} L${endPoint_x},${endPoint_y}`;
     stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, ["#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026"]) as string;
     strokeWidth = getAdjustedLineWidth(map, baseWidth)
-    strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0, 1]) as number;
+    strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.2, 1]) as number;
 
 
     } else if (unit.method === 'matrix') {
@@ -189,11 +205,11 @@ export function buildD3Instructions(
         for (let c = 0; c < numColumns; c++) {
         
         const value1 = getDynamicStyleValue(colorVar1Name, edge.attributes, thematicData.attributeStats, [0,5]) as number;//0.2
-        const value2 = getDynamicStyleValue(colorVar2Name, edge.attributes, thematicData.attributeStats, [0,5]) as number;//0.5
+        const value2 = getDynamicStyleValue(colorVar2Name, edge.attributes, thematicData.attributeStats, [0,5]) as number;//0.2
         const totalCells = numRows * numColumns;
         const cellIndex = r * numColumns + c;
-        // const v1 = d1.min + ((cellIndex + 0.5)/totalCells) * (d1.max - d1.min);
-        // const v2 = d2.min + ((cellIndex + 0.5)/totalCells) * (d2.max - d2.min);
+        // const v1 = d1.min + ((cellIndex + 0.2)/totalCells) * (d1.max - d1.min);
+        // const v2 = d2.min + ((cellIndex + 0.2)/totalCells) * (d2.max - d2.min);
         // const n1 = (v1 - d1.min)/(d1.max - d1.min);
         // const n2 = (v2 - d2.min)/(d2.max - d2.min);
         // const cellColor = getBivariateColor(n1, n2);
@@ -263,7 +279,7 @@ export function buildD3Instructions(
 
 
     fill = getDynamicStyleValue(unit.color, edge.attributes, thematicData.attributeStats, ["#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026"]) as string;
-    opacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.5, 1]) as number;
+    opacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.2, 1]) as number;
 
     } else if (unit.method === 'rect' && unit.orientation === 'parallel') {
 
@@ -400,7 +416,7 @@ export function drawD3Nodes(
     .attr('fill', d => getDynamicStyleValue(unit.color, d.attributes, attributeStats, d3.schemeBuGn[9]) as string)
     .attr('fill-opacity', d => getDynamicStyleValue(unit.opacity, d.attributes, attributeStats, [0, 1]) as number)
     .attr('stroke', '#333')
-    .attr('stroke-width', 0.5);
+    .attr('stroke-width', 0.2);
 
   
   circlesEnter.append('title')

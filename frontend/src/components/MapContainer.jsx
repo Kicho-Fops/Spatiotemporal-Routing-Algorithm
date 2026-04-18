@@ -20,7 +20,6 @@ import D3RouteOverlay from "./D3RouteOverlay";
 
 
 
-// --- Leaflet Marker Fix ---
 let DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
@@ -29,30 +28,29 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// --- Colors for the different Routing Modes ---
 const ROUTE_COLORS = [
-  "#2563eb", // Royal Blue
-  "#dc2626", // Red
-  "#16a34a", // Green
-  "#9333ea", // Purple
-  "#ea580c", // Orange
-  "#0891b2", // Cyan
-  "#be185d", // Pink
-  "#4b5563", // Gray
-  "#ca8a04", // Gold
+  "#2563eb", 
+  "#dc2626", 
+  "#16a34a", 
+  "#9333ea", 
+  "#ea580c", 
+  "#0891b2", 
+  "#be185d", 
+  "#4b5563", 
+  "#ca8a04", 
 ];
 
 function MapComponent() {
   const dispatch = useDispatch();
 
-  // Redux Selectors
+
   const { origin, destination } = useSelector((state) => state.Coordinates);
   const routeState = useSelector((state) => state.Route.routes);
 
-  // Safely extract the array from: Object { route_coords: [...] }
+
   const routesArray = routeState?.route_coords || [];
 
-  // Helper component to handle clicking on the map to set pins
+
   function ClickHandler() {
     useMapEvents({
       click(e) {
@@ -83,8 +81,9 @@ function MapComponent() {
       >
 
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          subdomains={['a', 'b', 'c', 'd']}
         />
 
         <ClickHandler />
