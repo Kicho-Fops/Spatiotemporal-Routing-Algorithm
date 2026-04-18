@@ -1,0 +1,59 @@
+{
+  "name": "streetweave",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/streetweave.umd.cjs",
+  "module": "./dist/streetweave.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/streetweave.js",
+      "require": "./dist/streetweave.umd.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "type-check": "tsc --noEmit",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@turf/turf": "^7.1.0",
+    "@types/ajv": "^1.0.4",
+    "@types/leaflet": "^1.9.12",
+    "d3": "^7.9.0",
+    "leaflet": "^1.9.4",
+    "leaflet-heatmap": "^1.0.0",
+    "leaflet-providers": "^2.0.0",
+    "leaflet.heat": "^0.2.0",
+    "maplibre-gl": "^5.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vega-embed": "^6.26.0",
+    "vega-lite": "^5.21.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "@microsoft/api-extractor": "^7.57.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "eslint": "^9.9.0",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.9",
+    "globals": "^15.9.0",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.0.1",
+    "vite": "^5.4.1",
+    "vite-plugin-dts": "^4.5.4"
+  }
+}

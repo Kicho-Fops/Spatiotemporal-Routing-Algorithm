@@ -11,11 +11,14 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "./Map.css";
-import L from "leaflet";
+import L, { Layer } from "leaflet";
 import { useSelector, useDispatch } from "react-redux";
 import { setOrigin, setDestination } from "../../redux/slices/coordinates";
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
+import D3RouteOverlay from "./D3RouteOverlay";
+
+
 
 // --- Leaflet Marker Fix ---
 let DefaultIcon = L.icon({
@@ -86,6 +89,8 @@ function MapComponent() {
 
         <ClickHandler />
 
+        <D3RouteOverlay routesArray={routesArray}/>
+
 
         <LayersControl position="topright">
           {routesArray.map((route, index) => (
@@ -97,7 +102,8 @@ function MapComponent() {
               <Polyline
                 positions={route.coordinates} 
                 pathOptions={{
-                  color: ROUTE_COLORS[index % ROUTE_COLORS.length],
+                  // color: ROUTE_COLORS[index % ROUTE_COLORS.length],
+                  color: "transparent",
                   weight: 5,
                   opacity: 0.8,
                   lineJoin: "round",
@@ -125,6 +131,7 @@ function MapComponent() {
           ))}
         </LayersControl>
 
+        
 
         {origin && origin[0] !== 0 && (
           <Marker position={[origin[0], origin[1]]}>

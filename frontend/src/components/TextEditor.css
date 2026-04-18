@@ -1,0 +1,55 @@
+/* TextEditor.css */
+
+.text-editor-container {
+  height: 400px; /* Or whatever height you prefer for the container */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+textarea {
+  height: 90%;
+  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  font-family: 'Fira Code', 'Courier New', Courier, monospace;
+  font-size: 20px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: both;
+  box-sizing: border-box;
+  background-color: #D3D3D3 ;  /* Dark background for code */
+  color: black ;             /* Light text color */
+  line-height: 1.5;
+  caret-color: black;       /* Highlighted caret color */
+  overflow: auto;
+}
+
+.apply-button {
+  margin-top: 10px;
+  padding: 10px;
+  font-size: 16px;
+  background-color: #D3D3D3;
+  color: black;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  align-self: flex-start; /* Keeps the button from stretching */
+}
+
+.apply-button:hover {
+  background-color: #999898;
+}
+
+/* This targets the text selection in the whole editor container */
+.text-editor-container ::selection {
+  background-color: #4c566a; /* A muted blue/grey that fits your theme */
+  color: #ffffff;            /* The color of the text when selected */
+}
+
+/* Specifically for the textarea if needed */
+textarea::selection {
+  background-color: #88c0d0; /* Use your caret-color for a matching highlight */
+  color: #2e3440;            /* Dark text for high contrast on light blue */
+}

@@ -25,16 +25,33 @@ import {
 } from "../../redux/slices/configuration";
 import { setRoute } from "../../redux/slices/routeCoordinates";
 import NumberInputWrapper from "../components/NumberInputWrapper";
+import TextEditor from "../components/TextEditor.jsx";
+
+import { setSpecification } from "../../redux/slices/specification";
+
+import { parseSpecification } from 'streetweave';
+// import { ParsedSpec } from 'streetweave'; 
+
+/**
+ * 
+ * 17/04/26 
+ * Ok, when did this become a nearly 500 line file? Good god
+ * 
+ */
+
 
 function MapPage() {
   const dispatch = useDispatch();
 
   const [isCollapsed, setIsCollapsed] = useState(false); // Controls the collapse
+  const [isTextEditorCollapsed, setIsTextEditorCollapsed] = useState(false);
   const [RainChecked, setRainChecked] = useState(false);
   const [WindChecked, setWindChecked] = useState(false);
   const [TempChecked, setTempChecked] = useState(false);
   const [HumChecked, setHumChecked] = useState(false);
   const [weatherSelectedLocal, setWeatherSelectedLocal] = useState([]);
+
+  const currentUnitSpec = parsedSpec.length > 0 ? parsedSpec[0].unit : null;
 
   const { origin } = useSelector((state) => state.Coordinates);
   const { destination } = useSelector((state) => state.Coordinates);
@@ -59,6 +76,9 @@ function MapPage() {
       dispatch(setNumberOfPaths(1));
     }
   }, [RouteType, dispatch]);
+
+
+
 
 
   function handleResetWeights() {
@@ -147,6 +167,19 @@ function MapPage() {
     (selectedWeather?.includes("humidity") ? humWeight : 0)
   ).toFixed(2);
 
+  const [parsedSpec, setParsedSpec] = useState([]);
+
+  const applySpec = (spec) => {
+    console.log("Applying specification:", spec);
+    const parsedLayers = parseSpecification(spec);
+    if (parsedLayers.length > 0) {
+      console.log("Specification:", parsedLayers[0]);
+      setParsedSpec(parsedLayers);
+      dispatch(setSpecification(parsedLayers));
+
+    }
+  };
+
   return (
     <Box position="relative" width="100vw" height="100vh" overflow="hidden">
       <Stack
@@ -156,14 +189,20 @@ function MapPage() {
         zIndex="1000"
         width={{ base: "90%", md: "400px" }}
         maxHeight="calc(100vh - 40px)"
-        overflowY={isCollapsed ? "hidden" : "auto"}
-        overflowX="hidden"
-        background={"white"}
-        padding={6}
-        borderRadius={20}
-        boxShadow="2xl"
-        transition="all 0.3s ease"
+        gap={4}
+        pointerEvents="none"
       >
+        <Stack
+          pointerEvents="auto"
+          flexShrink={1}
+          overflowY={isCollapsed ? "hidden" : "auto"}
+          overflowX="hidden"
+          background={"white"}
+          padding={6}
+          borderRadius={20}
+          boxShadow="2xl"
+          transition="all 0.3s ease"
+        >
 
         <Box
           display="flex"
@@ -335,9 +374,48 @@ function MapPage() {
             </Box>
           </Stack>
         )}
+        </Stack>
+        
+        <Stack
+          pointerEvents="auto"
+          flexShrink={0}
+          overflowY={isTextEditorCollapsed ? "hidden" : "auto"}
+          overflowX="hidden"
+          background={"white"}
+          padding={6}
+          borderRadius={20}
+          boxShadow="2xl"
+          transition="all 0.3s ease"
+        >
+
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={isTextEditorCollapsed ? 0 : 4}
+        >
+          <Text fontSize="lg" fontWeight="bold">
+            Text Editor
+          </Text>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsTextEditorCollapsed(!isTextEditorCollapsed)}
+            borderRadius="full"
+            
+          >
+            {isTextEditorCollapsed ? <ChevronDown /> : <ChevronUp />}
+          </Button>
+        </Box>
+
+         {!isTextEditorCollapsed && (
+          <TextEditor onApply={applySpec} />
+         )}
+
+      </Stack>
       </Stack>
 
-      <MapComponent />
+      <MapComponent/>
     </Box>
   );
 }

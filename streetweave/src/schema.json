@@ -1,0 +1,280 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ParsedSpec Array",
+  "description": "An array of specifications for different layers.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "unit": {
+        "type": "object",
+        "description": "Defines the unit of analysis and its associated rendering properties.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The unit of analysis (e.g., 'segment', 'node', 'point').",
+            "enum": ["segment", "node", "point"],
+            "default": "segment"
+          },
+          "density": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number", "minimum": 0, "maximum": 200 },
+              { "type": "null" }
+            ],
+            "description": "Density of each segment (in units per 200 meters).",
+            "default": null
+          },
+          "method": {
+            "type": "string",
+            "description": "The rendering method (e.g., 'line', 'rect', 'matrix'').",
+            "enum": ["line", "rect", "matrix"],
+            "default": "line"
+          },
+          "opacity": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number", "minimum": 0, "maximum": 1 }
+            ],
+            "description": "Opacity, can be a number (0-1) or a string (field name).",
+            "default": 1
+          },
+          "color": {
+            "type": "string",
+            "description": "Color (e.g., 'red', '#HEXCODE'). Can also be a field name.",
+            "default": "#FF0000"
+          },
+          "dash": {
+            "type": "string",
+            "description": "Style of line.",
+            "nullable": true
+          },
+          "squiggle": {
+            "type": "string",
+            "description": "Style of line.",
+            "nullable": true
+          },
+          "width": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number", "minimum": 0 }
+            ],
+            "description": "Width for lines. Can be a number or a string (field name).",
+            "default": 1
+          },
+          "height": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number", "minimum": 0 }
+            ],
+            "description": "Height for lines. Can be a number or a string (field name).",
+            "default": 1
+          },
+          "chart": {
+            "description": "Optional Vega-Lite chart specification.",
+            "oneOf": [
+              { "$ref": "https://vega.github.io/schema/vega-lite/v5.json" },
+              { "type": "null" }
+            ]
+          },
+          "rows": {
+            "type": "number",
+            "description": "Row parameter for methods like 'matrix'.",
+            "nullable": true
+          },
+          "columns": {
+            "type": "number",
+            "description": "Column parameter for methods like 'matrix'.",
+            "nullable": true
+          },
+          "orientation": {
+            "type": "string",
+            "description": "Orientation for rendering (e.g., 'parallel', 'perpendicular').",
+            "enum": ["parallel", "perpendicular"],
+            "default": "parallel"
+          },
+          "alignment": {
+            "type": "string",
+            "description": "Alignment for rendering (e.g., 'left', 'center', 'right').",
+            "enum": ["left", "center", "right"],
+            "default": "center"
+          }
+        },
+        "additionalProperties": false
+      },
+      "data": {
+        "type": "object",
+        "description": "Paths to geographic and thematic data layers.",
+        "properties": {
+          "physical": {
+            "type": "object",
+            "description": "Configuration for the physical layer data (e.g., GeoJSON file).",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path to the physical layer data file."
+              }
+            },
+            "required": ["path"],
+            "additionalProperties": false
+          },
+          "api": {
+            "type": "object",
+            "description": "Configuration for the API layer data (e.g., GeoJSON file from an endpoint).",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path to the API layer data."
+              }
+            },
+            "required": ["path"],
+            "additionalProperties": false
+          },
+          "thematic": {
+            "description": "Configuration for thematic data, either CSV-like tabular input or GeoJSON.",
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "enum": ["csv"],
+                    "default": "csv"
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "Path to thematic tabular data file (e.g., CSV)."
+                  },
+                  "latColumn": {
+                    "type": "string",
+                    "default": "lat"
+                  },
+                  "lonColumn": {
+                    "type": "string",
+                    "default": "lon"
+                  }
+                },
+                "required": ["path"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "enum": ["geojson"],
+                    "default": "geojson"
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "Path to a GeoJSON file."
+                  },
+                  "geojson": {
+                    "type": "object",
+                    "description": "Inline GeoJSON object.",
+                    "properties": {
+                      "type": { "type": "string", "enum": ["FeatureCollection"] },
+                      "features": { "type": "array" }
+                    },
+                    "required": ["type", "features"],
+                    "additionalProperties": true
+                  }
+                },
+                "anyOf": [
+                  { "required": ["path"] },
+                  { "required": ["geojson"] }
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "anyOf": [
+          { "required": ["physical"] },
+          { "required": ["api"] }
+        ],
+        "additionalProperties": false
+      },
+      "relation": {
+        "type": "object",
+        "description": "Spatial relation and aggregation parameters.",
+        "properties": {
+          "spatial": {
+            "type": "string",
+            "description": "Type of spatial relation for data aggregation ('buffer', 'nn', 'contains').",
+            "enum": ["buffer", "nn", "contains"],
+            "default": "buffer"
+          },
+          "value": {
+            "type": "number",
+            "description": "Value associated with the spatial relation (e.g., buffer distance).",
+            "default": 5
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of aggregation ('sum', 'mean', 'min', 'max').",
+            "enum": ["sum", "mean", "min", "max"],
+            "default": "mean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "zoom": {
+        "type": "array",
+        "description": "The zoom level range for the map, specified as a [minimum_zoom, maximum_zoom] array.",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": {
+          "type": "number",
+          "description": "A single zoom level, typically an integer.",
+          "minimum": 0,
+          "maximum": 22
+        },
+        "default": [18, 18],
+        "examples": [
+          [0, 22],
+          [5, 15],
+          [18, 18]
+        ]
+      },
+      "map": {
+        "type": "object",
+        "description": "Map styling properties.",
+        "properties": {
+          "streetColor": {
+            "type": "string",
+            "description": "Color for streets on the map.",
+            "nullable": true
+          },
+          "streetWidth": {
+            "type": "number",
+            "description": "Width for streets on the map.",
+            "minimum": 0,
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "query": {
+        "type": "object",
+        "description": "Parameters for a spatial query.",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Address for a spatial query.",
+            "nullable": true
+          },
+          "radius": {
+            "type": "number",
+            "description": "Radius for a spatial query.",
+            "minimum": 0,
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "additionalProperties": false
+  }
+}
+  
