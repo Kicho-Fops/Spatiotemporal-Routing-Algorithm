@@ -51,8 +51,6 @@ function MapPage() {
   const [HumChecked, setHumChecked] = useState(false);
   const [weatherSelectedLocal, setWeatherSelectedLocal] = useState([]);
 
-  const currentUnitSpec = parsedSpec.length > 0 ? parsedSpec[0].unit : null;
-
   const { origin } = useSelector((state) => state.Coordinates);
   const { destination } = useSelector((state) => state.Coordinates);
   const {

@@ -46,27 +46,40 @@ export default function D3RouteOverlay({ routesArray }) {
 
     // 2. Parse Your Data to Match Streetweave's PhysicalEdge[] Format
     let formattedEdges = [];
-    let stats = { min: Infinity, max: -Infinity }; // You need stats for the colors/widths to scale correctly
+    
+    // We will build a dynamic dictionary of stats for all properties
+    let attributeStats = {}; 
 
     routesArray.forEach((route) => {
       const coords = route.coordinates;
+      
+      const edgeAttributes = {
+        heat_exposure: route.heat_exposure,
+        distance: route.distance,
+        duration: route.duration,
+      };
+
+      // Dynamically track min/max for EVERY numeric property
+      Object.keys(edgeAttributes).forEach((key) => {
+        if (typeof edgeAttributes[key] === 'number') {
+          if (!attributeStats[key]) {
+            attributeStats[key] = { min: Infinity, max: -Infinity };
+          }
+          if (edgeAttributes[key] < attributeStats[key].min) {
+            attributeStats[key].min = edgeAttributes[key];
+          }
+          if (edgeAttributes[key] > attributeStats[key].max) {
+            attributeStats[key].max = edgeAttributes[key];
+          }
+        }
+      });
+
       // Loop over coordinates to create segment-by-segment edges
       for (let i = 0; i < coords.length - 1; i++) {
-        // Assuming route properties apply to the whole line
-        const edgeAttributes = {
-          heat_exposure: route.heat_exposure,
-          distance: route.distance,
-          duration: route.duration,
-        };
-
-        // Update stats (example for heat_exposure)
-        if (route.heat_exposure < stats.min) stats.min = route.heat_exposure;
-        if (route.heat_exposure > stats.max) stats.max = route.heat_exposure;
-
         formattedEdges.push({
           point0: { lat: coords[i][0], lon: coords[i][1] },
           point1: { lat: coords[i + 1][0], lon: coords[i + 1][1] },
-          bearing: 0, // calculate bearing if required by orientation logic: turf.bearing(coords[i], coords[i+1])
+          bearing: 0, 
           attributes: edgeAttributes,
         });
       }
@@ -75,10 +88,7 @@ export default function D3RouteOverlay({ routesArray }) {
     // Provide the required structure for getDynamicStyleValue
     const fakeProcessedEdges = {
       edges: formattedEdges,
-      attributeStats: {
-        // Map the grammar field name to its min/max
-        heat_exposure: { min: stats.min, max: stats.max },
-      },
+      attributeStats: attributeStats // Passes the dynmically generated stats
     };
 
     // 3. Define the Redraw Function
