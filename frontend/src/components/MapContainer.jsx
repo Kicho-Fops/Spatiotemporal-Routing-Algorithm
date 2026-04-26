@@ -8,6 +8,7 @@ import {
   Polyline,
   Tooltip,
   LayersControl,
+  LayerGroup,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "./Map.css";
@@ -40,6 +41,7 @@ const ROUTE_COLORS = [
   "#ca8a04", 
 ];
 
+
 function MapComponent() {
   const dispatch = useDispatch();
 
@@ -48,7 +50,18 @@ function MapComponent() {
   const routeState = useSelector((state) => state.Route.routes);
 
 
-  const routesArray = routeState?.route_coords || [];
+  // const routesArray = routeState?.route_coords || [];
+
+
+  let routesArray = [];
+  if (routeState?.type === "FeatureCollection") {
+    routesArray = routeState.features;
+  } else if (routeState?.route_coords) {
+    routesArray = routeState.route_coords;
+  } else if (Array.isArray(routeState)) {
+    routesArray = routeState;
+  }
+
 
 
   function ClickHandler() {
@@ -92,42 +105,86 @@ function MapComponent() {
 
 
         <LayersControl position="topright">
-          {routesArray.map((route, index) => (
-            <LayersControl.Overlay
-              key={route.route_index || index}
-              name={`Route: ${route.weight_type}`}
-              checked={index === 0} 
-            >
-              <Polyline
-                positions={route.coordinates} 
-                pathOptions={{
-                  // color: ROUTE_COLORS[index % ROUTE_COLORS.length],
-                  color: "transparent",
-                  weight: 5,
-                  opacity: 0.8,
-                  lineJoin: "round",
-                }}
-              >
-                <Tooltip sticky>
-                  <div style={{ lineHeight: "1.5" }}>
-                    <strong>{route.weight_type.toUpperCase()}</strong>
-                    <br />
-                    Distance: {route.distance} KM
-                    <br />
-                    Duration: {route.duration} min
-                    <br />
-                    Rain Exposure: {route.rain_exposure?.toFixed(2)}
-                    <br />
-                    Wind Exposure: {route.wind_exposure?.toFixed(2)}
-                    <br />
-                    Heat Exposure: {route.heat_exposure?.toFixed(2)}
-                    <br />
-                    Humidity Exposure: {route.humidity_exposure?.toFixed(2)}
-                  </div>
-                </Tooltip>
-              </Polyline>
-            </LayersControl.Overlay>
-          ))}
+          {(() => {
+            // 1. Define the 5 specific categories you want
+            const targetCategories = [
+              "rain-aware-route",
+              "heat-aware-route",
+              "wind-aware-route",
+              "humidity-aware-route",
+              "fastest-route"
+            ];
+            
+            // 2. Group all incoming map fragments by their weight_type
+            const groupedRoutes = {};
+            routesArray.forEach((route) => {
+              const isGeoJSON = !!route.geometry;
+              const properties = isGeoJSON ? route.properties : route;
+              const weightType = properties.weight_type || "unknown";
+
+              if (!groupedRoutes[weightType]) {
+                groupedRoutes[weightType] = [];
+              }
+              groupedRoutes[weightType].push({ route, properties, isGeoJSON });
+            });
+
+            // 3. Render exactly 1 checkbox per target category
+            return targetCategories.map((category, index) => {
+              const categoryRoutes = groupedRoutes[category];
+              
+              // Skip if no routes exist for this category
+              if (!categoryRoutes || categoryRoutes.length === 0) return null;
+
+              return (
+                <LayersControl.Overlay
+                  key={category}
+                  name={`Route: ${category}`}
+                  checked={index === 0} 
+                >
+                  {/* LayerGroup lets us render multiple Polylines inside a single overlay */}
+                  <LayerGroup>
+                    {categoryRoutes.map((item, i) => {
+                      const { route, properties, isGeoJSON } = item;
+                      const positions = isGeoJSON 
+                        ? route.geometry.coordinates.map(coord => [coord[1], coord[0]])
+                        : route.coordinates;
+
+                      return (
+                        <Polyline
+                          key={i}
+                          positions={positions} 
+                          pathOptions={{
+                            color: "transparent",
+                            weight: 20, 
+                            opacity: 0.8,
+                            lineJoin: "round",
+                          }}
+                        >
+                          <Tooltip sticky>
+                            <div style={{ lineHeight: "1.5" }}>
+                              <strong>{category}</strong>
+                              <br />
+                              Distance: {properties.distance} KM
+                              <br />
+                              Duration: {properties.duration} min
+                              <br />
+                              Rain Exposure: {properties.rain_exposure?.toFixed(2)}
+                              <br />
+                              Wind Exposure: {properties.wind_exposure?.toFixed(2)}
+                              <br />
+                              Heat Exposure: {properties.heat_exposure?.toFixed(2)}
+                              <br />
+                              Humidity Exposure: {properties.humidity_exposure?.toFixed(2)}
+                            </div>
+                          </Tooltip>
+                        </Polyline>
+                      );
+                    })}
+                  </LayerGroup>
+                </LayersControl.Overlay>
+              );
+            });
+          })()}
         </LayersControl>
 
         

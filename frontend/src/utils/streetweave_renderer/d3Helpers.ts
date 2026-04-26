@@ -5,6 +5,7 @@ import { offsetPoint } from "./geoHelpers";
 import { getAdjustedLineWidth } from "./mapHelpers";
 import * as d3 from 'd3';
 import L from "leaflet";
+import { style } from "d3";
 // let aggregationType: AggregationType;
 // console.log(aggregationType)
 
@@ -97,15 +98,15 @@ export function buildD3Instructions(
     if (unit.squiggle) {
         const { amplitude: squiggleAmplitude, frequency: squiggleFrequency } = getSquiggleParams(unit.squiggle, edge.attributes, processedEdges.attributeStats);
         d = generateSimpleWavyPath(p0, p1, squiggleAmplitude, squiggleFrequency);
-        stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, ["#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026"]) as string;
+        stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, ["#00ff00", "#3B82F6", "#F97316", "#fbff00", "#ff0000"]) as string;
         strokeWidth = getAdjustedLineWidth(map, baseWidth)
-        strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.2, 1]) as number;
+        strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.5, 1]) as number;
 
     } else {
         d = `M${p0.x},${p0.y}L${p1.x},${p1.y}`;
-        stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, ["#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026"]) as string;
+        stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, ["#00ff00", "#3B82F6", "#F97316", "#fbff00", "#ff0000"]) as string;
         strokeWidth = getAdjustedLineWidth(map, baseWidth)
-        strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.2, 1]) as number;
+        strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.5, 1]) as number;
         strokeDasharray =  getDashArray(unit.dash, edge.attributes, processedEdges.attributeStats)
     }
 
@@ -380,7 +381,18 @@ export function drawSegments(
       .style('stroke', (d: any) => d.stroke)
       .style('stroke-width', (d: any) => d['stroke-width'])
       .style('stroke-opacity', (d: any) => d['stroke-opacity'])
-      .style('stroke-dasharray', (d: any) => d['stroke-dasharray']);
+      .style('stroke-dasharray', (d: any) => d['stroke-dasharray'])
+      // This 2 lines fix jagged edges when zoomed in by making sure line joins and caps are rounded
+      .style('stroke-linejoin', 'round')
+      .style('stroke-linecap', (d: any) => d['stroke-linecap'] || 'round'); 
+      /*
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+
+      LA VIDA TE DA SORPRESAS, SORPRESAS TE DA LA VIDA AY DIOOOOOOS.
+      si lees esto, dale una escuchada a la de pedro navaja de Willie Colon :) alta cancion 
+      */
   }
         
 }

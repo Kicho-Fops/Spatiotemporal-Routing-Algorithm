@@ -31,6 +31,7 @@ export default function D3RouteOverlay() {
     if (!map.getPane("d3-routes-pane")) {
       map.createPane("d3-routes-pane");
       map.getPane("d3-routes-pane").style.zIndex = 450;
+      map.getPane("d3-routes-pane").style.pointerEvents = "none";
     }
     
     d3.select(map.getPanes()["d3-routes-pane"]).selectAll("svg").remove();
@@ -54,6 +55,8 @@ export default function D3RouteOverlay() {
       ? routesArray.features 
       : routesArray;
 
+    
+
     features.forEach((feature) => {
       const coords = feature.geometry.coordinates;
       const edgeAttributes = {
@@ -63,7 +66,8 @@ export default function D3RouteOverlay() {
         wind_exposure: feature.properties.wind_exposure,
         distance: feature.properties.distance,
         duration: feature.properties.duration,
-        repeated: feature.properties.repeated || 1
+        repeated: feature.properties.repeated || 1,
+        color: feature.properties.color || 1
       };
 
       // Track min/max stats

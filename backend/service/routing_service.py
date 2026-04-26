@@ -370,11 +370,27 @@ def calculate_route(datafile,
 
                 # Check if this edge is duplicated inside the segment_coords array, if so, skip it
                 
+                total_weight = float(round(float(edge_data.get('total_weight', 0)), 4))
+                
+                # Determine the primary exposure value based on the route type
+                route_type = route_obj.get('weight_type', 'unknown')
+                if route_type == 'heat-aware-route':
+                    exposure_val = 3
+                elif route_type == 'rain-aware-route':
+                    exposure_val = 1
+                elif route_type == 'wind-aware-route':
+                    exposure_val = 4
+                elif route_type == 'humidity-aware-route':
+                    exposure_val = 5
+                else:
+                    exposure_val = 0
+
+
                 properties = {
                     'repeated': 1,
                     'route_index': route_obj.get('route_index'), 
                     'segment_index': i,
-                    'weight_type': route_obj.get('weight_type', 'unknown'),
+                    'weight_type': route_type,
                     'street_name': str(edge_data.get('name', 'Unnamed Road')),
                     'highway': str(edge_data.get('highway', 'unknown')),
                     'distance': float(round(edge_data.get('length', 0), 2)),
@@ -383,7 +399,9 @@ def calculate_route(datafile,
                     'heat_exposure': float(round(float(edge_data.get('heat_weight', 0)), 4)),
                     'wind_exposure': float(round(float(edge_data.get('wind_weight', 0)), 4)),
                     'humidity_exposure': float(round(float(edge_data.get('humidity_weight', 0)), 4)),
-                    'total_weight': float(round(float(edge_data.get('total_weight', 0)), 4))
+                    'total_weight': total_weight,
+                    'intensity_score': exposure_val,
+                    'color': exposure_val
                 }
 
                 feature = {

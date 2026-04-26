@@ -384,6 +384,7 @@ function MapPage() {
           borderRadius={20}
           boxShadow="2xl"
           transition="all 0.3s ease"
+          maxHeight="calc(100vh - 40px)"
         >
 
         <Box
@@ -391,6 +392,7 @@ function MapPage() {
           justifyContent="space-between"
           alignItems="center"
           mb={isTextEditorCollapsed ? 0 : 4}
+          
         >
           <Text fontSize="lg" fontWeight="bold">
             Text Editor
