@@ -9,6 +9,22 @@ import { style } from "d3";
 // let aggregationType: AggregationType;
 // console.log(aggregationType)
 
+const DEFAULT_PALETTE = ["#00ff00", "#3B82F6", "#F97316", "#fbff00", "#ff0000"];
+
+const ATTRIBUTE_PALETTES: Record<string, string[]> = {
+
+rain_exposure: ["#aed8f2", "#1e5fa7", "#020b17"],
+
+heat_exposure: ["#ff8a65", "#d61c1c", "#2d0207"]
+};
+
+function getPaletteForColor(colorSpec: unknown): string[] {
+  if (typeof colorSpec === "string" && ATTRIBUTE_PALETTES[colorSpec]) {
+    return ATTRIBUTE_PALETTES[colorSpec];
+  }
+  return DEFAULT_PALETTE;
+}
+
 
 
 export function buildD3Instructions(
@@ -19,17 +35,14 @@ export function buildD3Instructions(
   distance: number, 
   aggregationType: AggregationType,
   map: L.Map) {
-    // console.log("processedEdge", processedEdges)
+    console.log("processedEdge", processedEdges)
     // let aggregationType: AggregationType;
-    // console.log(aggregationType)
+    console.log(aggregationType)
 
   // let aggregationType: AggregationType;
 
-  const offsetAngle = unit.alignment === "left" 
-    ? -90 
-    : unit.alignment === "right"
-      ? 90
-      : 0
+  const offsetAngle = unit.alignment === "left" ? -90 : unit.alignment === "right" ? 90 : 0;
+  let upDownAngle
 
   const instructions = edges.map((edge: PhysicalEdge, i: number) => {
 
@@ -49,10 +62,14 @@ export function buildD3Instructions(
     }
     edge.bearing = Bearing;
 
+    if (unit.orientation === 'parallel') {
+    upDownAngle = unit.alignment === "left" ? -.0001 : unit.alignment === "right" ? .0001 : 0;
+    }
 
     if (unit.alignment === "left" || unit.alignment === "right") {
-    const offsetStartCoords = offsetPoint(edge.point0.lat, edge.point0.lon, edge.bearing + offsetAngle, distance);
-    const offsetEndCoords = offsetPoint(edge.point1.lat, edge.point1.lon, edge.bearing + offsetAngle, distance);
+      const perpendicularOffset = distance * Math.tan((edge.bearing + 90) * Math.PI / 180);
+    const offsetStartCoords = offsetPoint(edge.point0.lat + upDownAngle, edge.point0.lon, edge.bearing + offsetAngle, distance);
+    const offsetEndCoords = offsetPoint(edge.point1.lat + upDownAngle, edge.point1.lon, edge.bearing + offsetAngle, distance);
     
     point0 = { lat: offsetStartCoords[0], lon: offsetStartCoords[1] };
     point1 = { lat: offsetEndCoords[0], lon: offsetEndCoords[1] };
@@ -89,22 +106,23 @@ export function buildD3Instructions(
 
     // Apply the repeated attribute as a slight modifier (e.g., +20% width per overlap)
     const repeatedMultiplier = edge.attributes?.repeated 
-      ? 1 + ((edge.attributes.repeated - 1) * 0.2) 
+      ? 1 + ((edge.attributes.repeated - 1) * 0.03) 
       : 1;
 
     const baseWidth = calculatedWidth * repeatedMultiplier;
+    const colorPalette = getPaletteForColor(unit.color);
 
     if (unit.method === 'line' && unit.orientation === 'parallel') {
     if (unit.squiggle) {
         const { amplitude: squiggleAmplitude, frequency: squiggleFrequency } = getSquiggleParams(unit.squiggle, edge.attributes, processedEdges.attributeStats);
         d = generateSimpleWavyPath(p0, p1, squiggleAmplitude, squiggleFrequency);
-        stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, ["#00ff00", "#3B82F6", "#F97316", "#fbff00", "#ff0000"]) as string;
+      stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, colorPalette) as string;
         strokeWidth = getAdjustedLineWidth(map, baseWidth)
         strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.5, 1]) as number;
 
     } else {
         d = `M${p0.x},${p0.y}L${p1.x},${p1.y}`;
-        stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, ["#00ff00", "#3B82F6", "#F97316", "#fbff00", "#ff0000"]) as string;
+      stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, colorPalette) as string;
         strokeWidth = getAdjustedLineWidth(map, baseWidth)
         strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.5, 1]) as number;
         strokeDasharray =  getDashArray(unit.dash, edge.attributes, processedEdges.attributeStats)
@@ -164,7 +182,7 @@ export function buildD3Instructions(
     d = `M${midpoint_screen[0]},${midpoint_screen[1]} L${endPoint_x},${endPoint_y}`;
 
     // d = `M${startpoint_screen[0]},${startpoint_screen[1]} L${endPoint_x},${endPoint_y}`;
-    stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, ["#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026"]) as string;
+    stroke = getDynamicStyleValue(unit.color, edge.attributes, processedEdges.attributeStats, colorPalette) as string;
     strokeWidth = getAdjustedLineWidth(map, baseWidth)
     strokeOpacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.2, 1]) as number;
 
@@ -279,7 +297,7 @@ export function buildD3Instructions(
     ].join(" ");
 
 
-    fill = getDynamicStyleValue(unit.color, edge.attributes, thematicData.attributeStats, ["#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026"]) as string;
+    fill = getDynamicStyleValue(unit.color, edge.attributes, thematicData.attributeStats, colorPalette) as string;
     opacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0.2, 1]) as number;
 
     } else if (unit.method === 'rect' && unit.orientation === 'parallel') {
@@ -294,7 +312,7 @@ export function buildD3Instructions(
 
     d = `M${p0.x},${p0.y} L${p1.x},${p1.y}`;
 
-    stroke = getDynamicStyleValue(unit.color, edge.attributes, thematicData.attributeStats, ["#feb24c", "#fd8d3c", "#fc4e2a", "#e31a1c", "#b10026"]) as string;
+    stroke = getDynamicStyleValue(unit.color, edge.attributes, thematicData.attributeStats, colorPalette) as string;
     strokeWidth = getDynamicStyleValue(unit.height, edge.attributes, thematicData.attributeStats, [0, 20]) as number;
     opacity = getDynamicStyleValue(unit.opacity, edge.attributes, processedEdges.attributeStats, [0, 1]) as number;
     strokeLinecap = "butt"

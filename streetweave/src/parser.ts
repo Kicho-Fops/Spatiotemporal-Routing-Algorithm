@@ -31,25 +31,38 @@ try {
 }
 
 export function parseSpecification(specJson: string): ParsedSpec[] {
-
-  const parsedJson = JSON.parse(specJson);
-  const layerSpecs = Array.isArray(parsedJson) ? parsedJson : [parsedJson];
-  console.log(layerSpecs);
-
-  const isValidTopLevel = validate(layerSpecs);
-  if (!isValidTopLevel) {
-    console.error('Top-level JSON schema validation errors:', validate.errors);
-    return []; // Return an empty array if the top-level structure is invalid
-  }
-
+  const trimmed = specJson.trim();
   const parsedResults: ParsedSpec[] = [];
 
-  for (const spec of layerSpecs) {
-    const parsedSingleSpec = spec;
-    if (parsedSingleSpec) {
-      parsedResults.push(parsedSingleSpec);
-    }
-  }
+  const tryParseBlock = (block: string) => {
+    const parsed = JSON.parse(block);
+    const layerSpecs = Array.isArray(parsed) ? parsed : [parsed];
 
-  return parsedResults;
+    const isValidTopLevel = validate(layerSpecs);
+    if (!isValidTopLevel) {
+      console.error("Top-level JSON schema validation errors:", validate.errors);
+      return;
+    }
+
+    parsedResults.push(...layerSpecs);
+  };
+
+  try {
+    // First try: one valid JSON value
+    tryParseBlock(trimmed);
+    return parsedResults;
+  } catch {
+    // Fallback: multiple JSON blocks separated by blank lines
+    const blocks = trimmed.split(/\n\s*\n+/).filter(Boolean);
+
+    for (const block of blocks) {
+      try {
+        tryParseBlock(block);
+      } catch (err) {
+        console.error("Invalid JSON block:", err);
+      }
+    }
+
+    return parsedResults;
+  }
 }

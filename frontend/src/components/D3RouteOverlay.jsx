@@ -20,12 +20,69 @@ export default function D3RouteOverlay() {
     (state) => state.Specification.specifications,
   );
 
-  const unitSpec = specifications?.length > 0 ? specifications[0].unit : null;
-
   const routesArray = useSelector((state) => state.Route.routes);
 
   useEffect(() => {
-    if (!map || !routesArray || !unitSpec) return;
+    if (!map || !specifications?.length) return;
+
+    const normalizeFeatures = (source) => {
+      if (!source) return [];
+      if (source?.type === "FeatureCollection" && Array.isArray(source.features)) {
+        return source.features;
+      }
+      if (Array.isArray(source?.route_coords)) {
+        return source.route_coords;
+      }
+      if (Array.isArray(source)) {
+        return source;
+      }
+      return [];
+    };
+
+    const parseFeaturesToEdges = (features) => {
+      const formattedEdges = [];
+      const attributeStats = {};
+
+      features.forEach((feature) => {
+        const isGeoFeature = !!feature?.geometry;
+        const coords = isGeoFeature ? feature.geometry?.coordinates : feature?.coordinates;
+        const props = isGeoFeature ? feature.properties : feature;
+
+        if (!Array.isArray(coords) || coords.length < 2) return;
+
+        const edgeAttributes = {
+          heat_exposure: props?.heat_exposure,
+          humidity_exposure: props?.humidity_exposure,
+          rain_exposure: props?.rain_exposure,
+          wind_exposure: props?.wind_exposure,
+          distance: props?.distance,
+          duration: props?.duration,
+          repeated: props?.repeated || 1,
+          color: props?.color || 1,
+        };
+
+        Object.keys(edgeAttributes).forEach((key) => {
+          if (typeof edgeAttributes[key] === "number") {
+            if (!attributeStats[key]) {
+              attributeStats[key] = { min: Infinity, max: -Infinity };
+            }
+            attributeStats[key].min = Math.min(attributeStats[key].min, edgeAttributes[key]);
+            attributeStats[key].max = Math.max(attributeStats[key].max, edgeAttributes[key]);
+          }
+        });
+
+        for (let i = 0; i < coords.length - 1; i++) {
+          formattedEdges.push({
+            point0: { lat: coords[i][1], lon: coords[i][0] },
+            point1: { lat: coords[i + 1][1], lon: coords[i + 1][0] },
+            bearing: 0,
+            attributes: edgeAttributes,
+          });
+        }
+      });
+
+      return { formattedEdges, attributeStats };
+    };
 
     // 1. Setup Layer
     if (!map.getPane("d3-routes-pane")) {
@@ -47,73 +104,48 @@ export default function D3RouteOverlay() {
       .join("g")
       .attr("class", "leaflet-zoom-hide");
 
-    // 2. Parse Your Data
-    let formattedEdges = [];
-    let attributeStats = {};
+    const baseFeatures = normalizeFeatures(routesArray);
 
-    const features = routesArray.type === "FeatureCollection" 
-      ? routesArray.features 
-      : routesArray;
+    const preparedLayers = specifications
+      .map((spec) => {
+        const unitSpec = spec?.unit;
+        if (!unitSpec) return null;
 
-    
+        const { formattedEdges, attributeStats } = parseFeaturesToEdges(baseFeatures);
+        if (!formattedEdges.length) return null;
 
-    features.forEach((feature) => {
-      const coords = feature.geometry.coordinates;
-      const edgeAttributes = {
-        heat_exposure: feature.properties.heat_exposure,
-        humidity_exposure: feature.properties.humidity_exposure,
-        rain_exposure: feature.properties.rain_exposure,
-        wind_exposure: feature.properties.wind_exposure,
-        distance: feature.properties.distance,
-        duration: feature.properties.duration,
-        repeated: feature.properties.repeated || 1,
-        color: feature.properties.color || 1
-      };
+        return { unitSpec, formattedEdges, attributeStats };
+      })
+      .filter(Boolean);
 
-      // Track min/max stats
-      Object.keys(edgeAttributes).forEach((key) => {
-        if (typeof edgeAttributes[key] === "number") {
-          if (!attributeStats[key]) {
-            attributeStats[key] = { min: Infinity, max: -Infinity };
-          }
-          attributeStats[key].min = Math.min(attributeStats[key].min, edgeAttributes[key]);
-          attributeStats[key].max = Math.max(attributeStats[key].max, edgeAttributes[key]);
-        }
-      });
-
-      // Create segment edges
-      for (let i = 0; i < coords.length - 1; i++) {
-        formattedEdges.push({
-          point0: { lat: coords[i][1], lon: coords[i][0] },
-          point1: { lat: coords[i + 1][1], lon: coords[i + 1][0] },
-          bearing: 0,
-          attributes: edgeAttributes,
-        });
-      }
-    });
-
-    const fakeProcessedEdges = {
-      edges: formattedEdges,
-      attributeStats: attributeStats,
-    };
-
-    // 3. Define the Redraw Function
     const redraw = () => {
       svgGroup.selectAll("*").remove();
 
-      const dynamicDistance = getOffsetDistance(map) * 0;
+      for (let layerIndex = 0; layerIndex < preparedLayers.length; layerIndex++) {
+        const { unitSpec, formattedEdges, attributeStats } = preparedLayers[layerIndex];
 
-      const instructions = buildD3Instructions(
-        formattedEdges,
-        unitSpec,
-        fakeProcessedEdges,
-        { attributeStats: fakeProcessedEdges.attributeStats },
-        dynamicDistance,
-        "none",
-        map,
-      );
+        const dynamicDistance = getOffsetDistance(map);
+        const fakeProcessedEdges = {
+          edges: formattedEdges,
+          attributeStats,
+        };
 
-      drawSegments(unitSpec.method, svgGroup, instructions);
+        const layerGroup = svgGroup
+          .append("g")
+          .attr("class", `leaflet-zoom-hide spec-layer-${layerIndex}`);
+
+        const instructions = buildD3Instructions(
+          formattedEdges,
+          unitSpec,
+          fakeProcessedEdges,
+          { attributeStats: fakeProcessedEdges.attributeStats },
+          dynamicDistance,
+          "none",
+          map,
+        );
+
+        drawSegments(unitSpec.method, layerGroup, instructions);
+      }
     };
 
     map.on("zoomend moveend viewreset", redraw);
@@ -123,7 +155,11 @@ export default function D3RouteOverlay() {
       map.off("zoomend moveend viewreset", redraw);
       if (svgRef.current) map.removeLayer(svgRef.current);
     };
-  }, [map, routesArray, unitSpec]);
+  }, [
+    map,
+    routesArray,
+    specifications,
+  ]);
 
   return null;
 }

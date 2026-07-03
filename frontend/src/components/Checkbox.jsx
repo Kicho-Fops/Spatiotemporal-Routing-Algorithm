@@ -2,7 +2,10 @@ import { Checkbox } from "@chakra-ui/react";
 
 const CustomCheckbox = ({ isChecked, onChange, label }) => {
   return (
-    <Checkbox.Root isChecked={isChecked} onChange={(e) => onChange?.(e.target.checked)}>
+    <Checkbox.Root
+      checked={isChecked}
+      onCheckedChange={(details) => onChange?.(details.checked)}
+    >
       <Checkbox.HiddenInput />
       <Checkbox.Control>
         <Checkbox.Indicator />
@@ -11,5 +14,4 @@ const CustomCheckbox = ({ isChecked, onChange, label }) => {
     </Checkbox.Root>
   );
 };
-
 export default CustomCheckbox;

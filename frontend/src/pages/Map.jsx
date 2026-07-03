@@ -27,20 +27,18 @@ import { setRoute } from "../../redux/slices/routeCoordinates";
 import NumberInputWrapper from "../components/NumberInputWrapper";
 import TextEditor from "../components/TextEditor.jsx";
 
-
 import { setSpecification } from "../../redux/slices/specification";
 
-
-import { parseSpecification } from 'streetweave';
-// import { ParsedSpec } from 'streetweave'; 
+// import { parseSpecification } from "streetweave";
+import { parseSpecification } from "../../../streetweave/src/parser";
+// import { ParsedSpec } from 'streetweave';
 
 /**
- * 
- * 17/04/26 
+ *
+ * 17/04/26
  * Ok, when did this become a nearly 500 line file? Good god
- * 
+ *
  */
-
 
 function MapPage() {
   const dispatch = useDispatch();
@@ -67,19 +65,12 @@ function MapPage() {
     (state) => state.Configuration.weatherSelected,
   );
 
-  
-
-
   // Sync Path count with RouteType 1
   useEffect(() => {
     if (RouteType === 1) {
       dispatch(setNumberOfPaths(1));
     }
   }, [RouteType, dispatch]);
-
-
-
-
 
   function handleResetWeights() {
     const activeWeather = selectedWeather.filter((item) => item !== "");
@@ -114,7 +105,9 @@ function MapPage() {
     if (selectedWeather?.includes("humidity")) activeWeights.push(humWeight);
     if (selectedWeather?.includes("wind")) activeWeights.push(windWeight);
 
-    fetch("http://localhost:5000/route", {
+    const routeApiPath = resolveApiPath(parsedSpec);
+
+    fetch(routeApiPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -127,12 +120,14 @@ function MapPage() {
         weights: activeWeights,
         time: 17,
         Graph_name: "chicago",
-        output_format: "geojson"
+        output_format: "geojson",
       }),
     })
       .then((res) => res.json())
-      .then((data) => {console.log("Received route data:", data);
-        dispatch(setRoute(data))})
+      .then((data) => {
+        console.log("Received route data:", data);
+        dispatch(setRoute(data));
+      })
       .catch((err) => console.error("Error:", err));
   }
 
@@ -152,13 +147,11 @@ function MapPage() {
     dispatch(setWeatherSelected(newSelected));
   }
 
-  function handleToggle(item, checked, setChecked) {
-    setChecked(checked);
+  function handleToggle(item, checked) {
     const newSelected = checked
-      ? [...weatherSelectedLocal, item]
-      : weatherSelectedLocal.filter((i) => i !== item);
+      ? [...new Set([...selectedWeather, item])]
+      : selectedWeather.filter((i) => i !== item);
 
-    setWeatherSelectedLocal(newSelected);
     dispatch(setWeatherSelected(newSelected));
   }
 
@@ -171,6 +164,13 @@ function MapPage() {
 
   const [parsedSpec, setParsedSpec] = useState([]);
 
+  function resolveApiPath(specLayers) {
+    const rawPath = specLayers?.find((layer) => layer?.data?.api?.path)?.data?.api?.path;
+    if (!rawPath || typeof rawPath !== "string") return "http://localhost:5000/route";
+
+    return rawPath.trim();
+  }
+
   const applySpec = (spec) => {
     console.log("Applying specification:", spec);
     const parsedLayers = parseSpecification(spec);
@@ -178,7 +178,6 @@ function MapPage() {
       console.log("Specification:", parsedLayers[0]);
       setParsedSpec(parsedLayers);
       dispatch(setSpecification(parsedLayers));
-
     }
   };
 
@@ -190,232 +189,230 @@ function MapPage() {
         left="5%"
         zIndex="1000"
         width={{ base: "90%", md: "400px" }}
-        maxHeight="calc(100vh - 40px)"
+        height="calc(100vh - 40px)"
+        overflow="hidden"
         gap={4}
         pointerEvents="none"
       >
         <Stack
           pointerEvents="auto"
-          flexShrink={1}
+          flex={isCollapsed ? "0 0 auto" : "1 1 0"}
+          minHeight={0}
           overflowY={isCollapsed ? "hidden" : "auto"}
           overflowX="hidden"
           background={"white"}
           padding={6}
           borderRadius={20}
-          boxShadow="2xl"
           transition="all 0.3s ease"
         >
-
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={isCollapsed ? 0 : 4}
-        >
-          <Text fontSize="lg" fontWeight="bold">
-            Configuration
-          </Text>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            borderRadius="full"
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={isCollapsed ? 0 : 4}
           >
-            {isCollapsed ? <ChevronDown /> : <ChevronUp />}
-          </Button>
-        </Box>
-
-
-        {!isCollapsed && (
-          <Stack gap="4">
-            <Text fontSize="sm" color="gray.600">
-              Select origin and destination to calculate routes.
+            <Text fontSize="lg" fontWeight="bold">
+              Configuration
             </Text>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              borderRadius="full"
+            >
+              {isCollapsed ? <ChevronDown /> : <ChevronUp />}
+            </Button>
+          </Box>
 
-            <SearchBar
-              type="origin"
-              placeholder="Origin..."
-            />
-            <SearchBar
-              type="destination"
-              placeholder="Destination..."
-            />
+          {!isCollapsed && (
+            <Stack gap="4">
+              <Text fontSize="sm" color="gray.600">
+                Select origin and destination to calculate routes.
+              </Text>
 
-            <Separator />
+              <SearchBar type="origin" placeholder="Origin..." />
+              <SearchBar type="destination" placeholder="Destination..." />
 
-            <RadioButtons
-              onSelect={handleChangeRouteType}
-              items={[
-                { label: "Single Route", value: 1 },
-                { label: "Multiple Routes (Weighted)", value: 2 },
-                { label: "Optimization (Single Weight)", value: 3 },
-              ]}
-            />
+              <Separator />
 
-            <Separator />
+              <RadioButtons
+                value={RouteType}
+                onSelect={handleChangeRouteType}
+                items={[
+                  { label: "Single Route", value: 1 },
+                  { label: "Multiple Routes (Weighted)", value: 2 },
+                  { label: "Optimization (Single Weight)", value: 3 },
+                ]}
+              />
 
-            {/* Weather Selection Logic */}
-            {(RouteType === 1 || RouteType === 2) && (
-              <Stack gap="1">
-                {RouteType === 2 && (
+              <Separator />
+
+              {/* Weather Selection Logic */}
+              {(RouteType === 1 || RouteType === 2) && (
+                <Stack gap="1">
+                  {RouteType === 2 && (
+                    <NumberInputWrapper
+                      value={numberOfPaths}
+                      onChange={(val) => dispatch(setNumberOfPaths(val))}
+                    />
+                  )}
+                  <CustomCheckbox
+                    isChecked={selectedWeather?.includes("rain")}
+                    label="Rain"
+                    onChange={(v) => handleToggle("rain", v)}
+                  />
+                  <CustomCheckbox
+                    isChecked={selectedWeather?.includes("wind")}
+                    label="Wind"
+                    onChange={(v) => handleToggle("wind", v)}
+                  />
+                  <CustomCheckbox
+                    isChecked={selectedWeather?.includes("heat")}
+                    label="Temperature"
+                    onChange={(v) => handleToggle("heat", v)}
+                  />
+                  <CustomCheckbox
+                    isChecked={selectedWeather?.includes("humidity")}
+                    label="Humidity"
+                    onChange={(v) => handleToggle("humidity", v)}
+                  />
+                </Stack>
+              )}
+
+              {RouteType === 3 && (
+                <Stack gap="3">
                   <NumberInputWrapper
                     value={numberOfPaths}
                     onChange={(val) => dispatch(setNumberOfPaths(val))}
                   />
-                )}
-                <CustomCheckbox
-                  isChecked={RainChecked}
-                  label="Rain"
-                  onChange={(v) => handleToggle("rain", v, setRainChecked)}
-                />
-                <CustomCheckbox
-                  isChecked={WindChecked}
-                  label="Wind"
-                  onChange={(v) => handleToggle("wind", v, setWindChecked)}
-                />
-                <CustomCheckbox
-                  isChecked={TempChecked}
-                  label="Temperature"
-                  onChange={(v) => handleToggle("heat", v, setTempChecked)}
-                />
-                <CustomCheckbox
-                  isChecked={HumChecked}
-                  label="Humidity"
-                  onChange={(v) => handleToggle("humidity", v, setHumChecked)}
-                />
-              </Stack>
-            )}
-
-            {RouteType === 3 && (
-              <Stack gap="3">
-                <NumberInputWrapper
-                  value={numberOfPaths}
-                  onChange={(val) => dispatch(setNumberOfPaths(val))}
-                />
-                <RadioButtons
-                  onSelect={handleWeatherRadioSelect}
-                  items={[
-                    { label: "Rain", value: "rain" },
-                    { label: "Wind", value: "wind" },
-                    { label: "Temperature", value: "heat" },
-                    { label: "Humidity", value: "humidity" },
-                  ]}
-                />
-              </Stack>
-            )}
-
-            <Separator />
-
-            {/* SLIDERS */}
-            {selectedWeather?.includes("rain") && (
-              <SliderCustom
-                element="Rain"
-                startingValue={rainWeight}
-                onChange={(e) => {
-                  dispatch(setRainWeight(Number(e)));
-                }}
-              />
-            )}
-            {selectedWeather?.includes("wind") && (
-              <SliderCustom
-                element="Wind"
-                startingValue={windWeight}
-                onChange={(e) => {
-                  dispatch(setWindWeight(Number(e)));
-                }}
-              />
-            )}
-            {selectedWeather?.includes("heat") && (
-              <SliderCustom
-                element="Temperature"
-                startingValue={tempWeight}
-                onChange={(e) => {
-                  dispatch(setTempWeight(Number(e)));
-                }}
-              />
-            )}
-            {selectedWeather?.includes("humidity") && (
-              <SliderCustom
-                element="Humidity"
-                startingValue={humWeight}
-                onChange={(e) => {
-                  dispatch(setHumWeight(Number(e)));
-                }}
-              />
-            )}
-
-            <Box p={3} bg="gray.50" borderRadius="md">
-              <Text fontSize="sm" fontWeight="bold">
-                Total Weight: {totalWeight}
-              </Text>
-              {totalWeight > 1.01 ? (
-                <Button
-                  size="xs"
-                  colorPalette="red"
-                  mt={2}
-                  onClick={handleResetWeights}
-                  width="100%"
-                >
-                  Normalize Weights to 1.0
-                </Button>
-              ) : (
-                <Button
-                  colorPalette="blue"
-                  mt={4}
-                  width="100%"
-                  onClick={handleRouteCalculation}
-                  disabled={origin[0] === 0}
-                >
-                  Calculate Route
-                </Button>
+                  <RadioButtons
+                    onSelect={handleWeatherRadioSelect}
+                    items={[
+                      { label: "Rain", value: "rain" },
+                      { label: "Wind", value: "wind" },
+                      { label: "Temperature", value: "heat" },
+                      { label: "Humidity", value: "humidity" },
+                    ]}
+                  />
+                </Stack>
               )}
-            </Box>
-          </Stack>
-        )}
+
+              <Separator />
+
+              {/* SLIDERS */}
+              {selectedWeather?.includes("rain") && (
+                <SliderCustom
+                  element="Rain"
+                  startingValue={rainWeight}
+                  onChange={(e) => {
+                    dispatch(setRainWeight(Number(e)));
+                  }}
+                />
+              )}
+              {selectedWeather?.includes("wind") && (
+                <SliderCustom
+                  element="Wind"
+                  startingValue={windWeight}
+                  onChange={(e) => {
+                    dispatch(setWindWeight(Number(e)));
+                  }}
+                />
+              )}
+              {selectedWeather?.includes("heat") && (
+                <SliderCustom
+                  element="Temperature"
+                  startingValue={tempWeight}
+                  onChange={(e) => {
+                    dispatch(setTempWeight(Number(e)));
+                  }}
+                />
+              )}
+              {selectedWeather?.includes("humidity") && (
+                <SliderCustom
+                  element="Humidity"
+                  startingValue={humWeight}
+                  onChange={(e) => {
+                    dispatch(setHumWeight(Number(e)));
+                  }}
+                />
+              )}
+
+              <Box p={3} bg="gray.50" borderRadius="md">
+                <Text fontSize="sm" fontWeight="bold">
+                  Total Weight: {totalWeight}
+                </Text>
+                {totalWeight > 1.01 ? (
+                  <Button
+                    size="xs"
+                    colorPalette="red"
+                    mt={2}
+                    onClick={handleResetWeights}
+                    width="100%"
+                  >
+                    Normalize Weights to 1.0
+                  </Button>
+                ) : (
+                  <Button
+                    colorPalette="blue"
+                    mt={4}
+                    width="100%"
+                    onClick={handleRouteCalculation}
+                    disabled={origin[0] === 0}
+                  >
+                    Calculate Route
+                  </Button>
+                )}
+              </Box>
+            </Stack>
+          )}
         </Stack>
-        
+
         <Stack
           pointerEvents="auto"
-          flexShrink={0}
+          flex={isTextEditorCollapsed ? "0 0 auto" : "1 1 0"}
+          minHeight={0}
+          display="flex"
+          flexDirection="column"
           overflowY={isTextEditorCollapsed ? "hidden" : "auto"}
           overflowX="hidden"
           background={"white"}
           padding={6}
           borderRadius={20}
-          boxShadow="2xl"
           transition="all 0.3s ease"
           maxHeight="calc(100vh - 40px)"
         >
-
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={isTextEditorCollapsed ? 0 : 4}
-          
-        >
-          <Text fontSize="lg" fontWeight="bold">
-            Text Editor
-          </Text>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsTextEditorCollapsed(!isTextEditorCollapsed)}
-            borderRadius="full"
-            
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={isTextEditorCollapsed ? 0 : 4}
           >
-            {isTextEditorCollapsed ? <ChevronDown /> : <ChevronUp />}
-          </Button>
-        </Box>
+            <Text fontSize="lg" fontWeight="bold">
+              Text Editor
+            </Text>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsTextEditorCollapsed(!isTextEditorCollapsed)}
+              borderRadius="full"
+            >
+              {isTextEditorCollapsed ? <ChevronDown /> : <ChevronUp />}
+            </Button>
+          </Box>
 
-         {!isTextEditorCollapsed && (
-          <TextEditor onApply={applySpec} />
-         )}
-
+          <Box
+            display={isTextEditorCollapsed ? "none" : "flex"}
+            flexDirection="column"
+            flex="1"
+            minHeight={0}
+            width="full"
+          >
+            <TextEditor onApply={applySpec} />
+          </Box>
+        </Stack>
       </Stack>
-      </Stack>
 
-      <MapComponent/>
+      <MapComponent />
     </Box>
   );
 }
