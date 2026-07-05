@@ -36,6 +36,20 @@ class DataLoader:
             self.graph_path = f"data/{graph_path}.graphml"
             graph = ox.load_graphml(self.graph_path)
             self.G = nx.MultiDiGraph(graph)
+            
+            
+            # add_edge_speed may have a bug:
+            # When adding the speed in kph this line is executed:
+            # edges["speed_kph"] = edges["maxspeed"].astype(str).map(_clean_maxspeed).astype(float)
+            # This line is executed on this edges["maxspeed"] set (first copule examples from chicago.graphml)
+            #  u            v            key
+            # 702090       261263104    0         NaN
+            # 1223297118                0      55 mph 
+            # Where NaN could be converted into a literal string "nan" instead of an absence of a number.
+            
+            # To correct go into \venv\Lib\site-packages\osmnx\routing.py", line 272, in add_edge_speeds 
+            # And replace that line with this:            
+            # edges["speed_kph"] = edges["maxspeed"].fillna("none").astype(str).map(_clean_maxspeed).astype(float)
             self.G = ox.routing.add_edge_speeds(self.G)
             self.G = ox.routing.add_edge_travel_times(self.G)    
             
